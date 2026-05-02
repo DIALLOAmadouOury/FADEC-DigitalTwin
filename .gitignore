@@ -1,0 +1,7 @@
+# On bloque TOUS les fichiers compilés, peu importe leur profondeur
+Debug/**/*.o
+Debug/**/*.d
+Debug/**/*.elf
+Debug/**/*.bin
+Debug/**/*.map
+Debug/**/*.su
