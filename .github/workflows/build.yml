@@ -18,6 +18,10 @@ jobs:
         release: '12.2.Rel1'
 
     - name: 🚀 Lancer la compilation
-      # Avec le format Makefile de CubeMX, on compile directement à la racine
-      # -j$(nproc) permet d'utiliser tous les coeurs du serveur GitHub pour compiler plus vite
       run: make -j$(nproc)
+
+    - name: 💾 Sauvegarder le Firmware compilé (Artefact)
+      uses: actions/upload-artifact@v4
+      with:
+        name: FADEC-Firmware
+        path: build/
