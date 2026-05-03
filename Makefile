@@ -68,23 +68,14 @@ Middlewares/Third_Party/FreeRTOS/Source/queue.c \
 Middlewares/Third_Party/FreeRTOS/Source/stream_buffer.c \
 Middlewares/Third_Party/FreeRTOS/Source/tasks.c \
 Middlewares/Third_Party/FreeRTOS/Source/timers.c \
-# C sources
-C_SOURCES =  \
-Core/Src/main.c \
-Core/Src/stm32l4xx_it.c \
-Core/Src/stm32l4xx_hal_msp.c \
-Core/Src/stm32l4xx_hal_timebase_tim.c \
-Core/Src/system_stm32l4xx.c \
-Core/Src/sysmem.c \
-Core/Src/syscalls.c \
-Core/Src/engine_sim.c \
-Core/Src/fadec_core.c \
-Core/Src/hardware_io.c \
 Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c \
 Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
 Core/Src/sysmem.c \
-Core/Src/syscalls.c
+Core/Src/syscalls.c \
+Core/Src/engine_sim.c \
+Core/Src/fadec_core.c \
+Core/Src/hardware_io.c
 
 # ASM sources
 ASM_SOURCES =  \
