@@ -22,7 +22,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "engine_sim.h"
+#include "fadec_core.h"
+#include "hardware_io.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,7 +66,8 @@ static void MX_TIM2_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
-
+void StartSimTask(void *argument);
+void StartFadecTask(void *argument);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -104,7 +107,16 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
+  // 1. Démarrage des périphériques physiques (ADC, Timer PWM)
+  HardwareIO_Init();
 
+  // 2. Initialisation des modèles mathématiques
+  EngineSim_Init();
+  Fadec_Init();
+
+  // Simulation de démarrage pilote pour nos tests
+  myEngine.target_thrust = 50.0f; // On demande 50% de puissance
+  myEngine.is_running = 1;        // On allume le moteur
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -132,6 +144,19 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  const osThreadAttr_t simTask_attributes = {
+  .name = "SimTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityHigh,
+  };
+  osThreadNew(StartSimTask, NULL, &simTask_attributes);
+
+  const osThreadAttr_t fadecTask_attributes = {
+  .name = "FadecTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+  };
+  osThreadNew(StartFadecTask, NULL, &fadecTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -348,7 +373,53 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+// --- TÂCHE 1 : LE MONDE PHYSIQUE (Tourne à 100Hz) ---
+void StartSimTask(void *argument)
+{
+  for(;;)
+  {
+    EngineSim_Update();
+    osDelay(10); // Pause de 10ms
+  }
+}
 
+// --- TÂCHE 2 : LE CONTRÔLEUR PID (Tourne à 50Hz) ---
+void StartFadecTask(void *argument)
+{
+  for(;;)
+  {
+    // Lecture des capteurs réels
+    myEngine.ambient_temp = HardwareIO_ReadAmbientTemp();
+
+    // Sécurité : Vérification de l'arrêt d'urgence (Bouton Bleu)
+    if (HardwareIO_IsEmergencyStopRequested()) 
+    {
+        myEngine.is_running = 0;
+        myEngine.target_thrust = 0.0f;
+    }
+
+    // Boucle de contrôle si le moteur est censé tourner
+    if (myEngine.is_running)
+    {
+        // Conversion de la poussée (0-100%) en consigne RPM (0-15000 RPM)
+        float target_rpm = myEngine.target_thrust * 150.0f;
+        
+        // Le cerveau PID calcule la dose de carburant
+        myEngine.fuel_flow = Fadec_ComputeFuel(target_rpm, myEngine.current_rpm);
+        
+        // Action physique : On ouvre la vraie vanne via le Timer PWM
+        HardwareIO_SetFuelValve(myEngine.fuel_flow);
+    }
+    else
+    {
+        // Coupe physiquement l'arrivée de carburant
+        myEngine.fuel_flow = 0.0f;
+        HardwareIO_SetFuelValve(0.0f);
+    }
+
+    osDelay(20); // Pause de 20ms
+  }
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
