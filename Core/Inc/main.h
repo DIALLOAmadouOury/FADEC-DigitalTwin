@@ -60,6 +60,15 @@ void Error_Handler(void);
 #define USER_BUTTON_Pin GPIO_PIN_13
 #define USER_BUTTON_GPIO_Port GPIOC
 #define USER_BUTTON_EXTI_IRQn EXTI15_10_IRQn
+#define WIFI_RST_Pin GPIO_PIN_8
+#define WIFI_RST_GPIO_Port GPIOE
+#define WIFI_WAKEUP_Pin GPIO_PIN_13
+#define WIFI_WAKEUP_GPIO_Port GPIOB
+#define WIFI_CS_Pin GPIO_PIN_0
+#define WIFI_CS_GPIO_Port GPIOE
+#define WIFI_DATARDY_Pin GPIO_PIN_1
+#define WIFI_DATARDY_GPIO_Port GPIOE
+#define WIFI_DATARDY_EXTI_IRQn EXTI1_IRQn
 
 /* USER CODE BEGIN Private defines */
 

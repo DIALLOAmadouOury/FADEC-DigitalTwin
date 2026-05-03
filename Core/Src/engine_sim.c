@@ -30,7 +30,7 @@ void EngineSim_Init(void)
     myEngine.ambient_temp  = 25.0f; // Température arbitraire avant lecture capteur
     myEngine.current_rpm   = 0.0f;
     myEngine.engine_temp   = 25.0f;
-    myEngine.is_running    = 0;
+    myEngine.is_running    = 1;
     myEngine.fault_code    = 0;
 }
 
