@@ -75,7 +75,8 @@ Core/Src/sysmem.c \
 Core/Src/syscalls.c \
 Core/Src/engine_sim.c \
 Core/Src/fadec_core.c \
-Core/Src/hardware_io.c
+Core/Src/hardware_io.c \
+Core/Src/wifi_mqtt.c
 
 # ASM sources
 ASM_SOURCES =  \

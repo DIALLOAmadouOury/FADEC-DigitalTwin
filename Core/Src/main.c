@@ -25,6 +25,7 @@
 #include "engine_sim.h"
 #include "fadec_core.h"
 #include "hardware_io.h"
+#include "wifi_mqtt.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -144,6 +145,14 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
+  // On crée la tâche Wi-Fi avec une priorité plus BASSE que la physique
+  const osThreadAttr_t mqttTask_attributes = {
+  .name = "MqttTask",
+  .stack_size = 512 * 4, // Le Wi-Fi consomme beaucoup de RAM (chaînes de caractères)
+  .priority = (osPriority_t) osPriorityLow, 
+  };
+  osThreadNew(StartMqttTask, NULL, &mqttTask_attributes);
+
   const osThreadAttr_t simTask_attributes = {
   .name = "SimTask",
   .stack_size = 128 * 4,
