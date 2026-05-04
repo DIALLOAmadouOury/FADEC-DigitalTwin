@@ -21,23 +21,30 @@ int8_t WifiMqtt_HardwareInit(void)
 void StartMqttTask(void *argument)
 {
     char json_payload[128];
+    int timer_fuite = 0; // Notre chronomètre
 
     for(;;)
     {
         if (myEngine.is_running)
         {
-            // 1. On fabrique le texte JSON
+            timer_fuite++;
+            
+            // Au bout de 20 secondes (40 boucles de 500ms), on perce le tuyau !
+            if (timer_fuite == 40) {
+                myEngine.has_leak = 1; 
+            }
+
+            // On ajoute la variable "leak" dans le JSON pour que l'IA connaisse la vérité (le Label)
             snprintf(json_payload, sizeof(json_payload), 
-                     "{\"rpm\": %.1f, \"temp\": %.1f, \"fuel\": %.1f}", 
+                     "{\"rpm\": %.1f, \"temp\": %.1f, \"fuel\": %.1f, \"leak\": %d}", 
                      myEngine.current_rpm, 
                      myEngine.engine_temp, 
-                     myEngine.fuel_flow);
+                     myEngine.fuel_flow,
+                     myEngine.has_leak);
 
-            // 2. On l'envoie sur le câble USB (qui affichera ça sur le PC)
-            // Le \r\n permet de passer à la ligne suivante
             printf("%s\r\n", json_payload); 
         }
 
-        osDelay(500); // 2 fois par seconde
+        osDelay(500); 
     }
 }

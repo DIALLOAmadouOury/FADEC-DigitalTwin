@@ -43,8 +43,18 @@ void EngineSim_Update(void)
 {
     if (myEngine.is_running) 
     {
-        /* 1. Dynamique du rotor : La vitesse dépend de l'accélération moins les frottements */
-        float accel = myEngine.fuel_flow * SIM_ACCEL_FACTOR;
+        /* --- LE SABOTAGE : Calcul du carburant réel --- */
+        // Par défaut, tout le carburant arrive au moteur
+        float effective_fuel = myEngine.fuel_flow; 
+        
+        // Si la fuite est déclarée, 30% du carburant part dans le vide !
+        if (myEngine.has_leak == 1) 
+        {
+            effective_fuel = myEngine.fuel_flow * 0.7f; 
+        }
+
+        /* 1. Dynamique du rotor : L'accélération dépend du carburant RÉELLEMENT brûlé */
+        float accel = effective_fuel * SIM_ACCEL_FACTOR;
         float drag  = myEngine.current_rpm * SIM_DRAG_FACTOR;
         
         myEngine.current_rpm += (accel - drag);
@@ -55,8 +65,8 @@ void EngineSim_Update(void)
             myEngine.current_rpm = SIM_MAX_RPM;
         }
 
-        /* 2. Thermodynamique : La température dépend du feu et du flux d'air froid */
-        float heat = myEngine.fuel_flow * SIM_HEAT_FACTOR;
+        /* 2. Thermodynamique : La chaleur dépend aussi du carburant réellement brûlé */
+        float heat = effective_fuel * SIM_HEAT_FACTOR;
         float cooling = (myEngine.engine_temp - myEngine.ambient_temp) * SIM_COOLING_RATE;
         
         myEngine.engine_temp += (heat - cooling);
