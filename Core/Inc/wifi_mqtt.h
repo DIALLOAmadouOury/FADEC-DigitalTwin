@@ -1,7 +1,6 @@
 /**
  * @file    wifi_mqtt.h
  * @brief   Module de communication IoT (Wi-Fi Inventek + MQTT).
- * @author  [Ton Nom]
  */
 
 #ifndef WIFI_MQTT_H
