@@ -10,15 +10,16 @@
 // Instance globale du moteur virtuel
 VirtualEngine_t myEngine;
 
-/* --- Paramètres Empiriques de Simulation --- */
+/* --- Paramètres Empiriques de Simulation (Calibrés Réalistes) --- */
 #define SIM_ACCEL_FACTOR   2.5f     // Force de poussée de la combustion
 #define SIM_DRAG_FACTOR    0.015f   // Frottements mécaniques et aérodynamiques
 #define SIM_MAX_RPM        15000.0f // Plafond physique de la turbine
 #define SIM_COAST_DRAG     0.02f    // Perte de vitesse en roue libre (moteur coupé)
 
-#define SIM_HEAT_FACTOR    8.0f     // Élévation de température par unité de carburant
-#define SIM_COOLING_RATE   0.05f    // Refroidissement dynamique en fonctionnement
-#define SIM_AMBIENT_COOL   0.01f    // Dissipation thermique à l'arrêt
+/* --- NOUVELLE THERMODYNAMIQUE --- */
+#define SIM_HEAT_FACTOR    1.2f     // Chaleur générée (Baissé drastiquement)
+#define SIM_COOLING_RATE   0.1f     // Dissipation dynamique (Refroidit 2x plus vite)
+#define SIM_AMBIENT_COOL   0.02f    // Refroidissement à l'arrêt
 
 /**
  * @brief Initialise les paramètres du jumeau numérique à froid.
