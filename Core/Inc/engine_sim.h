@@ -21,6 +21,7 @@ typedef struct {
     /* Sorties Physiques (Outputs) */
     float current_rpm;     /**< Vitesse de rotation de la turbine (RPM) */
     float engine_temp;     /**< Température des gaz d'échappement (EGT en °C) */
+    int has_leak;
     
     /* États du système */
     uint8_t is_running;    /**< Statut : 0 = Arrêté, 1 = En fonctionnement */
