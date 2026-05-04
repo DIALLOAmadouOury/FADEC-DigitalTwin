@@ -1,0 +1,193 @@
+ST Edge AI Core v2.2.0-20266 2adc00962
+Created date          : 2026-05-05 01:34:57
+Parameters            : generate --target stm32l4 --name network -m C:/Users/AIO/Downloads/fadec_edge_ai_model.tflite --compression none --verbosity 1 --workspace C:/Users/AIO/AppData/Local/Temp/mxAI_workspace28633515749680014120194060477877149 --output C:/Users/AIO/.stm32cubemx/network_output
+
+Exec/report summary (generate)
+-----------------------------------------------------------------------------------------------------------
+model file         :   C:\Users\AIO\Downloads\fadec_edge_ai_model.tflite                                   
+type               :   tflite                                                                              
+c_name             :   network                                                                             
+compression        :   none                                                                                
+options            :   allocate-inputs, allocate-outputs                                                   
+optimization       :   balanced                                                                            
+target/series      :   stm32l4                                                                             
+workspace dir      :   C:\Users\AIO\AppData\Local\Temp\mxAI_workspace28633515749680014120194060477877149   
+output dir         :   C:\Users\AIO\.stm32cubemx\network_output                                            
+model_fmt          :   float                                                                               
+model_name         :   fadec_edge_ai_model                                                                 
+model_hash         :   0xf4d1c4c22c405c855f2ff305d0af2484                                                  
+params #           :   73 items (292 B)                                                                    
+-----------------------------------------------------------------------------------------------------------
+input 1/1          :   'serving_default_ke.._tensor_90', f32(1x3), 12 Bytes, activations                   
+output 1/1         :   'nl_3', f32(1x1), 4 Bytes, activations                                              
+macc               :   95                                                                                  
+weights (ro)       :   292 B (292 B) (1 segment)                                                           
+activations (rw)   :   48 B (48 B) (1 segment) *                                                           
+ram (total)        :   48 B (48 B) = 48 + 0 + 0                                                            
+-----------------------------------------------------------------------------------------------------------
+(*) 'input'/'output' buffers are allocated in the activations buffer
+
+Model name - fadec_edge_ai_model
+------ ------------------------------------------------ ----------- ------------ ------ -------------------------------- --- --------------- -------------- ---------------------------- 
+m_id   layer (type,original)                            oshape      param/size     macc                     connected to   | c_size          c_macc         c_type                       
+------ ------------------------------------------------ ----------- ------------ ------ -------------------------------- --- --------------- -------------- ---------------------------- 
+0      serving_default_ke.._tensor_90 (Input, )         [b:1,c:3]                                                          | +128(+100.0%)   +40(+100.0%)   Dense_/Nonlinearity_[0, 1]   
+       sequential_2_1_Inp..r_1_MatMul (Placeholder, )   [b:8,c:3]   24/96                                                  | -96(-100.0%)                   
+       sequential_2_1_Inp.._1_BiasAdd (Placeholder, )   [b:8]       8/32                                                   | -32(-100.0%)                   
+       gemm_0 (Gemm, FULLY_CONNECTED)                   [b:1,c:8]                    32   serving_default_ke.._tensor_90   |                 -32(-100.0%)   
+                                                                                          sequential_2_1_Inp..r_1_MatMul   | 
+                                                                                          sequential_2_1_Inp.._1_BiasAdd   | 
+       nl_0_nl (Nonlinearity, FULLY_CONNECTED)          [b:1,c:8]                     8                           gemm_0   |                 -8(-100.0%)    
+------ ------------------------------------------------ ----------- ------------ ------ -------------------------------- --- --------------- -------------- ---------------------------- 
+1      arith_constant3 (Placeholder, )                  [b:4,c:8]   32/128                                                 | +16(+12.5%)     +40(+100.0%)   Dense_/Nonlinearity_[2, 3]   
+       arith_constant (Placeholder, )                   [b:4]       4/16                                                   | -16(-100.0%)                   
+       gemm_1 (Gemm, FULLY_CONNECTED)                   [b:1,c:4]                    36                          nl_0_nl   |                 -36(-100.0%)   
+                                                                                                         arith_constant3   | 
+                                                                                                          arith_constant   | 
+       nl_1_nl (Nonlinearity, FULLY_CONNECTED)          [b:1,c:4]                     4                           gemm_1   |                 -4(-100.0%)    
+------ ------------------------------------------------ ----------- ------------ ------ -------------------------------- --- --------------- -------------- ---------------------------- 
+2      arith_constant2 (Placeholder, )                  [b:1,c:4]   4/16                                                   | +4(+25.0%)      +5(+100.0%)    Dense_[4]                    
+       arith_constant1 (Placeholder, )                  [b:1]       1/4                                                    | -4(-100.0%)                    
+       gemm_2 (Gemm, FULLY_CONNECTED)                   [b:1,c:1]                     5                          nl_1_nl   |                 -5(-100.0%)    
+                                                                                                         arith_constant2   | 
+                                                                                                         arith_constant1   | 
+------ ------------------------------------------------ ----------- ------------ ------ -------------------------------- --- --------------- -------------- ---------------------------- 
+3      nl_3 (Nonlinearity, LOGISTIC)                    [b:1,c:1]                    10                           gemm_2   |                                Nonlinearity_[o][5]          
+------ ------------------------------------------------ ----------- ------------ ------ -------------------------------- --- --------------- -------------- ---------------------------- 
+model/c-model: macc=95/95  weights=292/292  activations=--/48 io=--/0
+
+
+
+Generated C-graph summary
+------------------------------------------------------------------------------------------------------------------------
+model name            : fadec_edge_ai_model
+c-name                : network
+c-node #              : 6
+c-array #             : 13
+activations size      : 48 (1 segment)
+weights size          : 292 (1 segment)
+macc                  : 95
+inputs                : ['serving_default_keras_tensor_90_output']
+outputs               : ['nl_3_output']
+
+C-Arrays (13)
+------ ---------------------------------------- ----------- ------------------------- ------------- --------- 
+c_id   name (*_array)                           item/size   domain/mem-pool           c-type        comment   
+------ ---------------------------------------- ----------- ------------------------- ------------- --------- 
+0      gemm_0_bias                              8/32        weights/weights           const float             
+1      gemm_0_output                            8/32        activations/**default**   float                   
+2      gemm_0_weights                           24/96       weights/weights           const float             
+3      gemm_1_bias                              4/16        weights/weights           const float             
+4      gemm_1_output                            4/16        activations/**default**   float                   
+5      gemm_1_weights                           32/128      weights/weights           const float             
+6      gemm_2_bias                              1/4         weights/weights           const float             
+7      gemm_2_output                            1/4         activations/**default**   float                   
+8      gemm_2_weights                           4/16        weights/weights           const float             
+9      nl_0_nl_output                           8/32        activations/**default**   float                   
+10     nl_1_nl_output                           4/16        activations/**default**   float                   
+11     nl_3_output                              1/4         activations/**default**   float         /output   
+12     serving_default_keras_tensor_90_output   3/12        activations/**default**   float         /input    
+------ ---------------------------------------- ----------- ------------------------- ------------- --------- 
+
+C-Layers (6)
+------ ---------------- ---- --------------- ------ ----- ------------------------------------------- ------------------ 
+c_id   name (*_layer)   id   layer_type      macc   rom   tensors                                     shape (array id)   
+------ ---------------- ---- --------------- ------ ----- ------------------------------------------- ------------------ 
+0      gemm_0           0    Dense           32     128   I: serving_default_keras_tensor_90_output   f32(1x3) (12)      
+                                                          W: gemm_0_weights                           f32(8x3) (2)       
+                                                          W: gemm_0_bias                              f32(8) (0)         
+                                                          O: gemm_0_output                            f32(1x8) (1)       
+------ ---------------- ---- --------------- ------ ----- ------------------------------------------- ------------------ 
+1      nl_0_nl          0    Nonlinearity    8      0     I: gemm_0_output                            f32(1x8) (1)       
+                                                          O: nl_0_nl_output                           f32(1x8) (9)       
+------ ---------------- ---- --------------- ------ ----- ------------------------------------------- ------------------ 
+2      gemm_1           1    Dense           36     144   I: nl_0_nl_output                           f32(1x8) (9)       
+                                                          W: gemm_1_weights                           f32(4x8) (5)       
+                                                          W: gemm_1_bias                              f32(4) (3)         
+                                                          O: gemm_1_output                            f32(1x4) (4)       
+------ ---------------- ---- --------------- ------ ----- ------------------------------------------- ------------------ 
+3      nl_1_nl          1    Nonlinearity    4      0     I: gemm_1_output                            f32(1x4) (4)       
+                                                          O: nl_1_nl_output                           f32(1x4) (10)      
+------ ---------------- ---- --------------- ------ ----- ------------------------------------------- ------------------ 
+4      gemm_2           2    Dense           5      20    I: nl_1_nl_output                           f32(1x4) (10)      
+                                                          W: gemm_2_weights                           f32(1x4) (8)       
+                                                          W: gemm_2_bias                              f32(1) (6)         
+                                                          O: gemm_2_output                            f32(1x1) (7)       
+------ ---------------- ---- --------------- ------ ----- ------------------------------------------- ------------------ 
+5      nl_3             3    Nonlinearity    10     0     I: gemm_2_output                            f32(1x1) (7)       
+                                                          O: nl_3_output                              f32(1x1) (11)      
+------ ---------------- ---- --------------- ------ ----- ------------------------------------------- ------------------ 
+
+
+
+Number of operations per c-layer
+------- ------ ------------------------ ----- -------------- 
+c_id    m_id   name (type)                #op           type 
+------- ------ ------------------------ ----- -------------- 
+0       0      gemm_0 (Dense)              32   smul_f32_f32 
+1       0      nl_0_nl (Nonlinearity)       8     op_f32_f32 
+2       1      gemm_1 (Dense)              36   smul_f32_f32 
+3       1      nl_1_nl (Nonlinearity)       4     op_f32_f32 
+4       2      gemm_2 (Dense)               5   smul_f32_f32 
+5       3      nl_3 (Nonlinearity)         10     op_f32_f32 
+------- ------ ------------------------ ----- -------------- 
+total                                      95 
+
+Number of operation types
+---------------- ---- ----------- 
+operation type      #           % 
+---------------- ---- ----------- 
+smul_f32_f32       73       76.8% 
+op_f32_f32         22       23.2% 
+
+Complexity report (model)
+------ --------------------------------- ------------------------- ------------------------- -------- 
+m_id   name                              c_macc                    c_rom                     c_id     
+------ --------------------------------- ------------------------- ------------------------- -------- 
+0      serving_default_keras_tensor_90   ||||||||||||||||  42.1%   ||||||||||||||    43.8%   [0, 1]   
+1      arith_constant3                   ||||||||||||||||  42.1%   ||||||||||||||||  49.3%   [2, 3]   
+2      arith_constant2                   ||                 5.3%   |||                6.8%   [4]      
+3      nl_3                              ||||              10.5%   |                  0.0%   [5]      
+------ --------------------------------- ------------------------- ------------------------- -------- 
+macc=95 weights=292 act=48 ram_io=0
+ 
+ Requested memory size by section - "stm32l4" target
+ ------------------------------ ------- -------- ------- ----- 
+ module                            text   rodata    data   bss 
+ ------------------------------ ------- -------- ------- ----- 
+ NetworkRuntime1020_CM4_GCC.a     6,600        0       0     0 
+ network.o                          536       48   1,748   148 
+ network_data.o                      48       16      88     0 
+ lib (toolchain)*                   614       24       0     0 
+ ------------------------------ ------- -------- ------- ----- 
+ RT total**                       7,798       88   1,836   148 
+ ------------------------------ ------- -------- ------- ----- 
+ weights                              0      296       0     0 
+ activations                          0        0       0    48 
+ io                                   0        0       0     0 
+ ------------------------------ ------- -------- ------- ----- 
+ TOTAL                            7,798      384   1,836   196 
+ ------------------------------ ------- -------- ------- ----- 
+ *  toolchain objects (libm/libgcc*)
+ ** RT AI runtime objects (kernels+infrastructure)
+  
+  Summary - "stm32l4" target
+  ---------------------------------------------------
+               FLASH (ro)      %*   RAM (rw)       % 
+  ---------------------------------------------------
+  RT total          9,722   97.0%      1,984   97.6% 
+  ---------------------------------------------------
+  TOTAL            10,018              2,032         
+  ---------------------------------------------------
+  *  rt/total
+
+
+Generated files (7)
+---------------------------------------------------------------- 
+C:\Users\AIO\.stm32cubemx\network_output\network_data_params.h   
+C:\Users\AIO\.stm32cubemx\network_output\network_data_params.c   
+C:\Users\AIO\.stm32cubemx\network_output\network_data.h          
+C:\Users\AIO\.stm32cubemx\network_output\network_data.c          
+C:\Users\AIO\.stm32cubemx\network_output\network_config.h        
+C:\Users\AIO\.stm32cubemx\network_output\network.h               
+C:\Users\AIO\.stm32cubemx\network_output\network.c               
