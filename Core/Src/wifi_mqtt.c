@@ -3,7 +3,7 @@
  * @file    wifi_mqtt.c
  * @author  [Ton Nom / Ton Pseudo GitHub]
  * @version V1.0.0
- * @date    [Date du jour]
+ * @date    2026-05-05
  * @brief   Implémentation de la surveillance FADEC Edge AI avec télémétrie Wi-Fi.
  * 
  * @details 
@@ -12,7 +12,7 @@
  * 
  * Fonctionnalités :
  * - Inférence Edge AI (détection d'anomalies de pression/carburant en temps réel).
- * - Connexion Wi-Fi WPA2.
+ * - Connexion Wi-Fi WPA2 (Identifiants protégés via secrets.h).
  * - Implémentation d'un client MQTT ultra-léger "from scratch" via Sockets TCP.
  * - Envoi de la télémétrie formatée en JSON vers un Broker public (HiveMQ).
  ******************************************************************************
@@ -25,6 +25,8 @@
 #include "engine_sim.h"   /* Structure du Digital Twin (Jumeau Numérique) */
 #include "cmsis_os.h"     /* OS Temps Réel (FreeRTOS API) */
 #include "ai_platform.h"  /* Types de base IA STMicroelectronics */
+#include "secrets.h"      /* Identifiants Wi-Fi sécurisés (Ignoré par git) */
+
 #include <stdio.h>
 #include <string.h>
 
@@ -71,8 +73,8 @@ int8_t WifiMqtt_HardwareInit(void) {
 
     printf("[WIFI] Tentative de connexion au reseau sans fil...\r\n");
     
-    /* ATTENTION : Identifiants Wi-Fi en dur (À déplacer dans une zone sécurisée en production) */
-    if (WIFI_Connect("Aod", "Diallo@2", WIFI_ECN_WPA2_PSK) != WIFI_STATUS_OK) {
+    /* Utilisation des macros sécurisées définies dans secrets.h */
+    if (WIFI_Connect(WIFI_SSID, WIFI_PASSWORD, WIFI_ECN_WPA2_PSK) != WIFI_STATUS_OK) {
         printf("[ERREUR] Echec WPA2. Verifiez le SSID ou le mot de passe.\r\n");
         return -1;
     }
@@ -87,12 +89,13 @@ int8_t WifiMqtt_HardwareInit(void) {
 /**
  * @brief  Ouvre une socket TCP et forge la trame MQTT CONNECT.
  * @note   Utilise une trame hexadécimale minimaliste pour éviter la surcharge logicielle.
- * @retval 0 si connecté au Broker, -1 en cas d'erreur TCP.
+ * @retval 0 si connecté au Broker, -1 en cas d'erreur TCP ou DNS.
  */
 int8_t MQTT_ConnectToBroker(void) {
     printf("[MQTT] Resolution DNS pour broker.hivemq.com...\r\n");
     
-    if (WIFI_GetHostAddress("broker.hivemq.com", broker_ip) != WIFI_STATUS_OK) {
+    /* Résolution DNS avec paramètre de taille '4' pour l'adresse IP */
+    if (WIFI_GetHostAddress("broker.hivemq.com", broker_ip, 4) != WIFI_STATUS_OK) {
         printf("[ERREUR MQTT] Serveur introuvable (Erreur DNS).\r\n");
         return -1;
     }
