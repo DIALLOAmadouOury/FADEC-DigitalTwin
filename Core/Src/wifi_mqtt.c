@@ -7,7 +7,7 @@
  */
 
 #include "wifi_mqtt.h"    /* Pour WifiMqtt_HardwareInit et StartMqttTask */
-#include "mqtt.h"         /* Pour MQTT_Publish et les types associés */
+//#include "wifi_mqtt.h"         /* Pour MQTT_Publish et les types associés */
 #include "network.h"      /* Pour ai_network_run et les buffers IA */
 #include "network_data.h"
 #include "engine_sim.h"
