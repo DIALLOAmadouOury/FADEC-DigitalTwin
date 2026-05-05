@@ -12,6 +12,7 @@
 #include "network_data.h"
 #include "engine_sim.h"
 #include "cmsis_os.h"
+#include "ai_platform.h"
 #include <stdio.h>
 #include <string.h>
 
