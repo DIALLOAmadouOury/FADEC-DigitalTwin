@@ -75,6 +75,8 @@ Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
 Core/Src/engine_sim.c \
 Core/Src/fadec_core.c \
 Core/Src/hardware_io.c \
+Core/Src/es_wifi.c \
+Core/Src/wifi.c \
 Core/Src/wifi_mqtt.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_spi.c \
 Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_spi_ex.c \
