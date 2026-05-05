@@ -1,87 +1,169 @@
 /**
+ ******************************************************************************
  * @file    wifi_mqtt.c
  * @author  [Ton Nom / Ton Pseudo GitHub]
- * @brief   Implémentation de la surveillance FADEC par IA et connexion Wi-Fi.
- * @date    2026-05-05
+ * @version V1.0.0
+ * @date    [Date du jour]
+ * @brief   Implémentation de la surveillance FADEC Edge AI avec télémétrie Wi-Fi.
  * 
  * @details 
- * Ce module gère la connexion au réseau Wi-Fi via la puce Inventek ISM43362
- * et exécute l'inférence locale via le modèle de réseau de neurones X-CUBE-AI.
+ * Ce module combine l'inférence d'un réseau de neurones local (X-CUBE-AI) 
+ * et la transmission de données IoT via la puce Wi-Fi Inventek ISM43362.
+ * 
+ * Fonctionnalités :
+ * - Inférence Edge AI (détection d'anomalies de pression/carburant en temps réel).
+ * - Connexion Wi-Fi WPA2.
+ * - Implémentation d'un client MQTT ultra-léger "from scratch" via Sockets TCP.
+ * - Envoi de la télémétrie formatée en JSON vers un Broker public (HiveMQ).
+ ******************************************************************************
  */
 
-#include "wifi_mqtt.h"    /* Définitions des tâches */
+#include "wifi_mqtt.h"    /* Définitions des tâches et structures */
 #include "wifi.h"         /* API Wi-Fi Officielle de STMicroelectronics */
-#include "network.h"      /* API générée par X-CUBE-AI */
-#include "network_data.h" /* Poids et biais du réseau de neurones */
-#include "engine_sim.h"   /* Structure de données du moteur simulé */
-#include "cmsis_os.h"     /* OS Temps Réel (FreeRTOS) */
-#include "ai_platform.h"  /* Types de base STMicroelectronics AI */
+#include "network.h"      /* API d'inférence générée par X-CUBE-AI */
+#include "network_data.h" /* Poids et biais du modèle IA compressé */
+#include "engine_sim.h"   /* Structure du Digital Twin (Jumeau Numérique) */
+#include "cmsis_os.h"     /* OS Temps Réel (FreeRTOS API) */
+#include "ai_platform.h"  /* Types de base IA STMicroelectronics */
 #include <stdio.h>
 #include <string.h>
 
 /* ============================================================================== */
-/* === VARIABLES GLOBALES PRIVÉES (Ressources IA)                             === */
+/* === VARIABLES GLOBALES PRIVÉES (Ressources IA & Réseau)                    === */
 /* ============================================================================== */
 
-/** @brief Pointeur vers l'instance du réseau de neurones */
+/** @brief Pointeur de gestion vers l'instance du réseau de neurones en RAM */
 static ai_handle engine_ai_handler = AI_HANDLE_NULL;
 
-/** @brief Mémoire de travail (RAM) allouée pour l'inférence IA */
+/** @brief Mémoire de travail (Activations) allouée pour l'inférence IA */
 static uint8_t activations[AI_NETWORK_DATA_ACTIVATIONS_SIZE];
+
+/** @brief Adresse IP du Broker MQTT distant */
+uint8_t broker_ip[4];
+
+/** @brief Identifiant du Socket TCP matériel utilisé par la puce Inventek */
+uint32_t socket_id = 0; 
 
 
 /* ============================================================================== */
-/* === COUCHE RÉSEAU & MOCK MQTT                                              === */
+/* === COUCHE RÉSEAU (WI-FI & TCP MQTT MANUEL)                                === */
 /* ============================================================================== */
 
 /**
- * @brief  Initialise le module Inventek (SPI) et se connecte à la Box Internet.
- * @retval 0 si connecté, -1 en cas d'erreur.
+ * @brief  Initialise le module Wi-Fi matériel et se connecte au point d'accès.
+ * @retval 0 si la connexion a réussi, -1 en cas d'échec (Hardware ou WPA).
  */
 int8_t WifiMqtt_HardwareInit(void) {
     uint8_t macAddress[6];
     uint8_t ipAddress[4];
 
     printf("\r\n[WIFI] Initialisation du module Inventek ISM43362...\r\n");
-
-    /* 1. Initialisation de la puce via le bus SPI3 */
+    
     if (WIFI_Init() != WIFI_STATUS_OK) {
-        printf("[ERREUR] Impossible d'initialiser le module Wi-Fi.\r\n");
+        printf("[ERREUR] Defaillance d'initialisation SPI/Wi-Fi.\r\n");
         return -1;
     }
     
-    /* Ajout du paramètre '6' exigé par la nouvelle version du driver ST */
     WIFI_GetMAC_Address(macAddress, 6);
     printf("[WIFI] Module OK. MAC : %02X:%02X:%02X:%02X:%02X:%02X\r\n", 
            macAddress[0], macAddress[1], macAddress[2], 
            macAddress[3], macAddress[4], macAddress[5]);
 
-    /* 2. Connexion au réseau */
-    printf("[WIFI] Tentative de connexion au reseau...\r\n");
+    printf("[WIFI] Tentative de connexion au reseau sans fil...\r\n");
     
+    /* ATTENTION : Identifiants Wi-Fi en dur (À déplacer dans une zone sécurisée en production) */
     if (WIFI_Connect("Aod", "Diallo@2", WIFI_ECN_WPA2_PSK) != WIFI_STATUS_OK) {
-        printf("[ERREUR] Echec de la connexion Wi-Fi. (Mauvais mot de passe ou reseau introuvable ?)\r\n");
+        printf("[ERREUR] Echec WPA2. Verifiez le SSID ou le mot de passe.\r\n");
         return -1;
     }
     
-    /* 3. Récupération de l'adresse IP (Ajout du paramètre '4') */
     WIFI_GetIP_Address(ipAddress, 4);
-    printf("[WIFI] Connecte avec succes a Internet ! \r\n");
-    printf("[WIFI] Adresse IP locale : %d.%d.%d.%d\r\n", 
+    printf("[WIFI] Connecte avec succes ! IP locale : %d.%d.%d.%d\r\n", 
            ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
-
+           
     return 0;
 }
 
 /**
- * @brief  Bouchon (Mock) pour la publication MQTT.
- * @details On l'utilise en attendant d'implémenter la vraie pile MQTT LwIP/coreMQTT.
+ * @brief  Ouvre une socket TCP et forge la trame MQTT CONNECT.
+ * @note   Utilise une trame hexadécimale minimaliste pour éviter la surcharge logicielle.
+ * @retval 0 si connecté au Broker, -1 en cas d'erreur TCP.
+ */
+int8_t MQTT_ConnectToBroker(void) {
+    printf("[MQTT] Resolution DNS pour broker.hivemq.com...\r\n");
+    
+    if (WIFI_GetHostAddress("broker.hivemq.com", broker_ip) != WIFI_STATUS_OK) {
+        printf("[ERREUR MQTT] Serveur introuvable (Erreur DNS).\r\n");
+        return -1;
+    }
+
+    printf("[MQTT] Ouverture Socket TCP vers %d.%d.%d.%d:1883...\r\n", 
+           broker_ip[0], broker_ip[1], broker_ip[2], broker_ip[3]);
+           
+    if (WIFI_OpenClientConnection(socket_id, WIFI_TCP_PROTOCOL, "MQTT", broker_ip, 1883, 0) != WIFI_STATUS_OK) {
+        printf("[ERREUR MQTT] Echec d'ouverture du Socket TCP.\r\n");
+        return -1;
+    }
+
+    /* Trame Hexadécimale brute d'un packet MQTT CONNECT v3.1.1 
+       Client ID: STM32_FADEC_AOD, KeepAlive: 60s, Clean Session: True */
+    uint8_t connect_pkt[] = {
+        0x10, 0x1B, // Control Header: Connect (0x10), Remaining Length (27 bytes)
+        0x00, 0x04, 'M', 'Q', 'T', 'T', // Protocol Name
+        0x04, 0x02, 0x00, 0x3C,         // Protocol Level (4), Flags (02), KeepAlive (60s)
+        0x00, 0x0F, 'S','T','M','3','2','_','F','A','D','E','C','_','A','O','D' // Payload: ClientID
+    };
+
+    uint16_t sent_len = 0;
+    if (WIFI_SendData(socket_id, connect_pkt, sizeof(connect_pkt), &sent_len, 5000) != WIFI_STATUS_OK) {
+        printf("[ERREUR MQTT] Echec de transmission de la requete CONNECT.\r\n");
+        return -1;
+    }
+    
+    printf("[MQTT] Handshake reussi. Connecte au Broker public HiveMQ !\r\n");
+    return 0;
+}
+
+/**
+ * @brief  Construit dynamiquement et transmet une trame MQTT PUBLISH (QoS 0).
+ * @param  topic   Chaine de caractères représentant le topic MQTT (ex: "engine/telemetry").
+ * @param  payload Chaine de caractères représentant les données (ex: chaîne JSON).
+ * @retval 0 si publié avec succès, -1 en cas d'erreur réseau.
  */
 int8_t MQTT_Publish(const char* topic, const char* payload) {
-    printf("\r\n[MQTT MOCK TX] >>>\r\n");
-    printf("  ├─ Topic   : %s\r\n", topic);
-    printf("  └─ Payload : %s\r\n", payload);
-    return 0; 
+    uint8_t pub_buf[256];
+    uint16_t topic_len = strlen(topic);
+    uint16_t payload_len = strlen(payload);
+    
+    /* Longueur restante du paquet = 2 octets pour la taille du topic + topic + payload */
+    uint16_t rem_len = 2 + topic_len + payload_len; 
+    uint16_t idx = 0;
+
+    /* En-tête MQTT Publish (0x30 = Message de type PUBLISH, QoS 0, pas de RETAIN) */
+    pub_buf[idx++] = 0x30; 
+    pub_buf[idx++] = (uint8_t)rem_len; /* Valide uniquement car rem_len est < 127 octets */
+    
+    /* Insertion de la taille du Topic (MSB puis LSB) */
+    pub_buf[idx++] = (topic_len >> 8) & 0xFF; 
+    pub_buf[idx++] = topic_len & 0xFF;        
+    
+    /* Insertion du nom du Topic */
+    memcpy(&pub_buf[idx], topic, topic_len);
+    idx += topic_len;
+
+    /* Insertion du contenu (Payload JSON) */
+    memcpy(&pub_buf[idx], payload, payload_len);
+    idx += payload_len;
+
+    /* Envoi de la trame binaire complète via TCP */
+    uint16_t sent_len = 0;
+    if(WIFI_SendData(socket_id, pub_buf, idx, &sent_len, 2000) != WIFI_STATUS_OK) {
+         printf("[MQTT TX] Perte de connexion lors de la publication.\r\n");
+         return -1;
+    }
+
+    printf("[MQTT TX] %s\r\n", payload);
+    return 0;
 }
 
 
@@ -90,7 +172,9 @@ int8_t MQTT_Publish(const char* topic, const char* payload) {
 /* ============================================================================== */
 
 /**
- * @brief Tâche cyclique d'acquisition, d'inférence AI et de publication.
+ * @brief Tâche temps-réel principale (Thread).
+ * @details Gère le cycle de vie complet : Acquisition -> Inférence IA -> Transmission.
+ * @param argument Pointeur générique FreeRTOS (non utilisé).
  */
 void StartMqttTask(void *argument) {
     ai_error err;
@@ -100,7 +184,7 @@ void StartMqttTask(void *argument) {
     /* ------------------------------------------------------------------------- */
     err = ai_network_create(&engine_ai_handler, AI_NETWORK_DATA_CONFIG);
     if (err.type != AI_ERROR_NONE) {
-        printf("[ERROR] AI initialization failed. Terminating thread.\r\n");
+        printf("[FATAL IA] Erreur de creation du modele. Arret du thread.\r\n");
         osThreadTerminate(osThreadGetId());
     }
 
@@ -110,61 +194,66 @@ void StartMqttTask(void *argument) {
             AI_NETWORK_DATA_ACTIVATIONS(activations)
         )
     };
-
+    
     if (!ai_network_init(engine_ai_handler, &params)) {
-        printf("[ERROR] AI parameter linking failed. Terminating thread.\r\n");
+        printf("[FATAL IA] Erreur d'initialisation des poids. Arret du thread.\r\n");
         osThreadTerminate(osThreadGetId());
     }
 
     /* ------------------------------------------------------------------------- */
-    /* 2. INITIALISATION MATÉRIELLE (WI-FI)                                      */
+    /* 2. INITIALISATION DU MODULE RÉSEAU (WI-FI + MQTT)                         */
     /* ------------------------------------------------------------------------- */
     if (WifiMqtt_HardwareInit() != 0) {
-        printf("[FATAL] Arret de la tache reseau suite a une erreur Wi-Fi.\r\n");
+        printf("[FATAL RESEAU] Coupure module Wi-Fi. Arret du thread.\r\n");
+        osThreadTerminate(osThreadGetId());
+    }
+    
+    if (MQTT_ConnectToBroker() != 0) {
+        printf("[FATAL RESEAU] Impossible de joindre le cloud. Arret du thread.\r\n");
         osThreadTerminate(osThreadGetId());
     }
 
     /* ------------------------------------------------------------------------- */
-    /* 3. CONFIGURATION DES BUFFERS D'ENTRÉE/SORTIE DU MODÈLE                    */
+    /* 3. PRÉPARATION DES TENSEURS D'ENTRÉE/SORTIE                               */
     /* ------------------------------------------------------------------------- */
-    float in_data[AI_NETWORK_IN_1_SIZE];   /* Entrées : [RPM, Temp, Fuel Flow] */
-    float out_data[AI_NETWORK_OUT_1_SIZE]; /* Sortie  : [Probabilité de Fuite] */
+    float in_data[AI_NETWORK_IN_1_SIZE];   /* Tensor d'entrée : [RPM, Temp, Fuel Flow] */
+    float out_data[AI_NETWORK_OUT_1_SIZE]; /* Tensor de sortie : [Probabilité Anomalie] */
     
     ai_buffer ai_input = AI_BUFFER_OBJ_INIT(AI_BUFFER_FORMAT_FLOAT, 1, 1, AI_NETWORK_IN_1_SIZE, 1, in_data);
     ai_buffer ai_output = AI_BUFFER_OBJ_INIT(AI_BUFFER_FORMAT_FLOAT, 1, 1, AI_NETWORK_OUT_1_SIZE, 1, out_data);
+    
+    char json_buffer[256]; /* Buffer pour la sérialisation des données */
 
-    char json_buffer[256];
-
-    printf("\r\n[SYSTEM] FADEC Edge AI Task Started & Ready.\r\n");
+    printf("\r\n[SYSTEM] FADEC Edge AI & Telemetry Task Started & Ready.\r\n");
 
     /* ------------------------------------------------------------------------- */
-    /* 4. BOUCLE INFINIE DE LA TÂCHE (SUPER-LOOP)                                */
+    /* 4. BOUCLE DE TRAITEMENT INFINIE (Fréquence : 2 Hz)                        */
     /* ------------------------------------------------------------------------- */
     for(;;) {
         if (myEngine.is_running) {
             
-            /* Acquisition des données brutes */
+            /* Etape A : Acquisition des données brutes depuis le jumeau numérique */
             in_data[0] = myEngine.current_rpm;
             in_data[1] = myEngine.engine_temp;
             in_data[2] = myEngine.fuel_flow;
 
-            /* Inférence Edge AI */
+            /* Etape B : Exécution de l'inférence locale (Edge AI) */
             if (ai_network_run(engine_ai_handler, &ai_input, &ai_output) > 0) {
                 
                 float leak_proba = out_data[0];
-                uint8_t warning_flag = (leak_proba > 0.85f) ? 1 : 0;
+                uint8_t warning_flag = (leak_proba > 0.85f) ? 1 : 0; /* Seuil d'alerte critique à 85% */
 
-                /* Sérialisation JSON */
+                /* Etape C : Sérialisation au format JSON */
                 snprintf(json_buffer, sizeof(json_buffer), 
                          "{\"rpm\":%.1f,\"tmp\":%.1f,\"fuel\":%.1f,\"prob\":%.2f,\"warn\":%d}",
                          in_data[0], in_data[1], in_data[2], leak_proba, warning_flag);
 
-                /* Publication MQTT (Mock pour le moment) */
-                MQTT_Publish("engine/v1/telemetry", json_buffer);
+                /* Etape D : Transmission asynchrone via MQTT TCP */
+                MQTT_Publish("stm32/aod/fadec", json_buffer);
             }
         }
         
-        /* Pause de 500ms (Fréquence de boucle : 2 Hz) */
+        /* Pause non-bloquante pour permettre au processeur de gérer la pile réseau */
         osDelay(500); 
     }
 }
