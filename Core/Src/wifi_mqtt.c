@@ -1,6 +1,7 @@
 /**
  ******************************************************************************
  * @file    wifi_mqtt.c
+ * @author  [Ton Nom / Ton Pseudo GitHub]
  * @version V1.0.0
  * @date    2026-05-05
  * @brief   Implémentation de la surveillance FADEC Edge AI avec télémétrie Wi-Fi.
@@ -11,10 +12,10 @@
  * 
  * Fonctionnalités :
  * - Inférence Edge AI (détection d'anomalies de pression/carburant en temps réel).
- * - Connexion Wi-Fi WPA2 (Identifiants protégés via secrets.h).
- * - Implémentation d'un client MQTT ultra-léger "from scratch" via Sockets TCP.
- * - Envoi de la télémétrie formatée en JSON vers un Broker public (HiveMQ).
- * - RECEPTION (Bi-directionnel) des ordres depuis le Dashboard Python.
+ * - Connexion Wi-Fi WPA2.
+ * - Implémentation d'un client MQTT complet "from scratch" via Sockets TCP.
+ * - PUBLISH : Envoi de la télémétrie formatée en JSON vers HiveMQ.
+ * - SUBSCRIBE : Abonnement et réception des ordres pour interaction bi-directionnelle.
  ******************************************************************************
  */
 
@@ -53,7 +54,7 @@ uint32_t socket_id = 0;
 
 /**
  * @brief  Initialise le module Wi-Fi matériel et se connecte au point d'accès.
- * @retval 0 si la connexion a réussi, -1 en cas d'échec (Hardware ou WPA).
+ * @retval 0 si la connexion a réussi, -1 en cas d'échec.
  */
 int8_t WifiMqtt_HardwareInit(void) {
     uint8_t macAddress[6];
@@ -71,7 +72,7 @@ int8_t WifiMqtt_HardwareInit(void) {
            macAddress[0], macAddress[1], macAddress[2], 
            macAddress[3], macAddress[4], macAddress[5]);
 
-    /* --- TEST DE CONNEXION EN DUR --- */
+    /* --- Identifiants Wi-Fi --- */
     char *test_ssid = "Aod";
     char *test_pass = "Diallo@2";
     
@@ -81,7 +82,6 @@ int8_t WifiMqtt_HardwareInit(void) {
         printf("[ERREUR] Echec WPA2. Le module ne parvient pas a s'associer.\r\n");
         return -1;
     }
-    /* -------------------------------- */
     
     WIFI_GetIP_Address(ipAddress, 4);
     printf("[WIFI] Connecte ! IP : %d.%d.%d.%d\r\n", 
@@ -92,13 +92,11 @@ int8_t WifiMqtt_HardwareInit(void) {
 
 /**
  * @brief  Ouvre une socket TCP et forge la trame MQTT CONNECT.
- * @note   Utilise une trame hexadécimale minimaliste pour éviter la surcharge logicielle.
- * @retval 0 si connecté au Broker, -1 en cas d'erreur TCP ou DNS.
+ * @retval 0 si connecté au Broker, -1 en cas d'erreur.
  */
 int8_t MQTT_ConnectToBroker(void) {
     printf("[MQTT] Resolution DNS pour broker.hivemq.com...\r\n");
     
-    /* Résolution DNS avec paramètre de taille '4' pour l'adresse IP */
     if (WIFI_GetHostAddress("broker.hivemq.com", broker_ip, 4) != WIFI_STATUS_OK) {
         printf("[ERREUR MQTT] Serveur introuvable (Erreur DNS).\r\n");
         return -1;
@@ -112,13 +110,12 @@ int8_t MQTT_ConnectToBroker(void) {
         return -1;
     }
 
-    /* Trame Hexadécimale brute d'un packet MQTT CONNECT v3.1.1 
-       Client ID: STM32_FADEC_AOD, KeepAlive: 60s, Clean Session: True */
+    /* Trame MQTT CONNECT v3.1.1 */
     uint8_t connect_pkt[] = {
-        0x10, 0x1B, // Control Header: Connect (0x10), Remaining Length (27 bytes)
-        0x00, 0x04, 'M', 'Q', 'T', 'T', // Protocol Name
-        0x04, 0x02, 0x00, 0x3C,         // Protocol Level (4), Flags (02), KeepAlive (60s)
-        0x00, 0x0F, 'S','T','M','3','2','_','F','A','D','E','C','_','A','O','D' // Payload: ClientID
+        0x10, 0x1B, // Control Header
+        0x00, 0x04, 'M', 'Q', 'T', 'T', 
+        0x04, 0x02, 0x00, 0x3C,         
+        0x00, 0x0F, 'S','T','M','3','2','_','F','A','D','E','C','_','A','O','D'
     };
 
     uint16_t sent_len = 0;
@@ -132,37 +129,62 @@ int8_t MQTT_ConnectToBroker(void) {
 }
 
 /**
+ * @brief  S'abonne officiellement à un topic MQTT (Trame Hexadécimale) pour écouter les ordres.
+ * @param  topic Le canal à écouter.
+ * @retval 0 si réussi, -1 sinon.
+ */
+int8_t MQTT_Subscribe(const char* topic) {
+    uint8_t sub_pkt[128];
+    uint16_t topic_len = strlen(topic);
+    uint16_t rem_len = 2 + 2 + topic_len + 1; // ID + Longueur + Topic + QoS
+    
+    uint16_t idx = 0;
+    sub_pkt[idx++] = 0x82; // Commande SUBSCRIBE
+    sub_pkt[idx++] = (uint8_t)rem_len;
+    
+    sub_pkt[idx++] = 0x00; // Packet ID MSB
+    sub_pkt[idx++] = 0x01; // Packet ID LSB
+    
+    sub_pkt[idx++] = (topic_len >> 8) & 0xFF;
+    sub_pkt[idx++] = topic_len & 0xFF;
+    
+    memcpy(&sub_pkt[idx], topic, topic_len);
+    idx += topic_len;
+    
+    sub_pkt[idx++] = 0x00; // QoS 0
+    
+    uint16_t sent_len = 0;
+    if (WIFI_SendData(socket_id, sub_pkt, idx, &sent_len, 2000) != WIFI_STATUS_OK) {
+        printf("[ERREUR] Echec de l'abonnement MQTT.\r\n");
+        return -1;
+    }
+    printf("[MQTT] Abonne avec succes au topic : %s\r\n", topic);
+    return 0;
+}
+
+/**
  * @brief  Construit dynamiquement et transmet une trame MQTT PUBLISH (QoS 0).
- * @param  topic   Chaine de caractères représentant le topic MQTT (ex: "engine/telemetry").
- * @param  payload Chaine de caractères représentant les données (ex: chaîne JSON).
- * @retval 0 si publié avec succès, -1 en cas d'erreur réseau.
  */
 int8_t MQTT_Publish(const char* topic, const char* payload) {
     uint8_t pub_buf[256];
     uint16_t topic_len = strlen(topic);
     uint16_t payload_len = strlen(payload);
     
-    /* Longueur restante du paquet = 2 octets pour la taille du topic + topic + payload */
     uint16_t rem_len = 2 + topic_len + payload_len; 
     uint16_t idx = 0;
 
-    /* En-tête MQTT Publish (0x30 = Message de type PUBLISH, QoS 0, pas de RETAIN) */
     pub_buf[idx++] = 0x30; 
-    pub_buf[idx++] = (uint8_t)rem_len; /* Valide uniquement car rem_len est < 127 octets */
+    pub_buf[idx++] = (uint8_t)rem_len; 
     
-    /* Insertion de la taille du Topic (MSB puis LSB) */
     pub_buf[idx++] = (topic_len >> 8) & 0xFF; 
     pub_buf[idx++] = topic_len & 0xFF;        
     
-    /* Insertion du nom du Topic */
     memcpy(&pub_buf[idx], topic, topic_len);
     idx += topic_len;
 
-    /* Insertion du contenu (Payload JSON) */
     memcpy(&pub_buf[idx], payload, payload_len);
     idx += payload_len;
 
-    /* Envoi de la trame binaire complète via TCP */
     uint16_t sent_len = 0;
     if(WIFI_SendData(socket_id, pub_buf, idx, &sent_len, 2000) != WIFI_STATUS_OK) {
          printf("[MQTT TX] Perte de connexion lors de la publication.\r\n");
@@ -174,7 +196,7 @@ int8_t MQTT_Publish(const char* topic, const char* payload) {
 }
 
 /* ============================================================================== */
-/* === NOUVEAU : FONCTION DE RÉCEPTION DES ORDRES (BI-DIRECTIONNEL)           === */
+/* === FONCTION DE RÉCEPTION DES ORDRES (BI-DIRECTIONNEL)                     === */
 /* ============================================================================== */
 
 /**
@@ -209,18 +231,14 @@ void CheckForIncomingCommands(void) {
 
 /**
  * @brief Tâche temps-réel principale (Thread).
- * @details Gère le cycle de vie complet : Acquisition -> Inférence IA -> Transmission.
- * @param argument Pointeur générique FreeRTOS (non utilisé).
  */
 void StartMqttTask(void *argument) {
     ai_error err;
     
-    /* ------------------------------------------------------------------------- */
-    /* 1. INITIALISATION DU MOTEUR D'INFÉRENCE (X-CUBE-AI)                       */
-    /* ------------------------------------------------------------------------- */
+    /* --- 1. INITIALISATION DU MOTEUR D'INFÉRENCE (X-CUBE-AI) --- */
     err = ai_network_create(&engine_ai_handler, AI_NETWORK_DATA_CONFIG);
     if (err.type != AI_ERROR_NONE) {
-        printf("[FATAL IA] Erreur de creation du modele. Arret du thread.\r\n");
+        printf("[FATAL IA] Erreur de creation du modele.\r\n");
         osThreadTerminate(osThreadGetId());
     }
 
@@ -232,43 +250,40 @@ void StartMqttTask(void *argument) {
     };
     
     if (!ai_network_init(engine_ai_handler, &params)) {
-        printf("[FATAL IA] Erreur d'initialisation des poids. Arret du thread.\r\n");
+        printf("[FATAL IA] Erreur d'initialisation des poids.\r\n");
         osThreadTerminate(osThreadGetId());
     }
 
-    /* ------------------------------------------------------------------------- */
-    /* 2. INITIALISATION DU MODULE RÉSEAU (WI-FI + MQTT)                         */
-    /* ------------------------------------------------------------------------- */
+    /* --- 2. INITIALISATION DU RÉSEAU (WI-FI + MQTT + ABONNEMENT) --- */
     if (WifiMqtt_HardwareInit() != 0) {
-        printf("[FATAL RESEAU] Coupure module Wi-Fi. Arret du thread.\r\n");
+        printf("[FATAL RESEAU] Coupure module Wi-Fi.\r\n");
         osThreadTerminate(osThreadGetId());
     }
     
     if (MQTT_ConnectToBroker() != 0) {
-        printf("[FATAL RESEAU] Impossible de joindre le cloud. Arret du thread.\r\n");
+        printf("[FATAL RESEAU] Impossible de joindre le cloud.\r\n");
         osThreadTerminate(osThreadGetId());
     }
 
-    /* ------------------------------------------------------------------------- */
-    /* 3. PRÉPARATION DES TENSEURS D'ENTRÉE/SORTIE                               */
-    /* ------------------------------------------------------------------------- */
-    float in_data[AI_NETWORK_IN_1_SIZE];   /* Tensor d'entrée : [RPM, Temp, Fuel Flow] */
-    float out_data[AI_NETWORK_OUT_1_SIZE]; /* Tensor de sortie : [Probabilité Anomalie] */
+    /* On s'abonne au canal pour recevoir les ordres Python */
+    MQTT_Subscribe("stm32/aod/command");
+
+    /* --- 3. PRÉPARATION DES TENSEURS D'ENTRÉE/SORTIE --- */
+    float in_data[AI_NETWORK_IN_1_SIZE];   
+    float out_data[AI_NETWORK_OUT_1_SIZE]; 
     
     ai_buffer ai_input = AI_BUFFER_OBJ_INIT(AI_BUFFER_FORMAT_FLOAT, 1, 1, AI_NETWORK_IN_1_SIZE, 1, in_data);
     ai_buffer ai_output = AI_BUFFER_OBJ_INIT(AI_BUFFER_FORMAT_FLOAT, 1, 1, AI_NETWORK_OUT_1_SIZE, 1, out_data);
     
-    char json_buffer[256]; /* Buffer pour la sérialisation des données */
+    char json_buffer[256]; 
 
     printf("\r\n[SYSTEM] FADEC Edge AI & Telemetry Task Started & Ready.\r\n");
 
-    /* ------------------------------------------------------------------------- */
-    /* 4. BOUCLE DE TRAITEMENT INFINIE (Fréquence : 2 Hz)                        */
-    /* ------------------------------------------------------------------------- */
+    /* --- 4. BOUCLE DE TRAITEMENT INFINIE --- */
     for(;;) {
         if (myEngine.is_running) {
             
-            /* Etape A : Acquisition des données brutes depuis le jumeau numérique */
+            /* Etape A : Acquisition des données brutes */
             in_data[0] = myEngine.current_rpm;
             in_data[1] = myEngine.engine_temp;
             in_data[2] = myEngine.fuel_flow;
@@ -277,22 +292,22 @@ void StartMqttTask(void *argument) {
             if (ai_network_run(engine_ai_handler, &ai_input, &ai_output) > 0) {
                 
                 float leak_proba = out_data[0];
-                uint8_t warning_flag = (leak_proba > 0.85f) ? 1 : 0; /* Seuil d'alerte critique à 85% */
+                uint8_t warning_flag = (leak_proba > 0.85f) ? 1 : 0; 
 
-                /* Etape C : Sérialisation au format JSON */
+                /* Etape C : Sérialisation JSON */
                 snprintf(json_buffer, sizeof(json_buffer), 
                          "{\"rpm\":%.1f,\"tmp\":%.1f,\"fuel\":%.1f,\"prob\":%.2f,\"warn\":%d}",
                          in_data[0], in_data[1], in_data[2], leak_proba, warning_flag);
 
-                /* Etape D : Transmission asynchrone via MQTT TCP */
+                /* Etape D : Transmission MQTT */
                 MQTT_Publish("stm32/aod/fadec", json_buffer);
             }
         }
         
-        /* Pause non-bloquante pour permettre au processeur de gérer la pile réseau */
+        /* Pause pour laisser le processeur respirer */
         osDelay(500); 
         
-        /* --- Etape E : Vérification des ordres distants --- */
+        /* Etape E : Vérification des ordres distants Python */
         CheckForIncomingCommands();
     }
 }
