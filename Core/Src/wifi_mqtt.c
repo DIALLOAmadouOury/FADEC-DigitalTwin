@@ -50,22 +50,22 @@ int8_t WifiMqtt_HardwareInit(void) {
         return -1;
     }
     
-    WIFI_GetMAC_Address(macAddress);
+    /* Ajout du paramètre '6' exigé par la nouvelle version du driver ST */
+    WIFI_GetMAC_Address(macAddress, 6);
     printf("[WIFI] Module OK. MAC : %02X:%02X:%02X:%02X:%02X:%02X\r\n", 
            macAddress[0], macAddress[1], macAddress[2], 
            macAddress[3], macAddress[4], macAddress[5]);
 
-    /* 2. Connexion au réseau (À MODIFIER AVEC TES IDENTIFIANTS) */
+    /* 2. Connexion au réseau */
     printf("[WIFI] Tentative de connexion au reseau...\r\n");
     
-    // ⚠️ ATTENTION : Remplacer par le nom et le mot de passe de ton routeur / téléphone !
     if (WIFI_Connect("Aod", "Diallo@2", WIFI_ECN_WPA2_PSK) != WIFI_STATUS_OK) {
         printf("[ERREUR] Echec de la connexion Wi-Fi. (Mauvais mot de passe ou reseau introuvable ?)\r\n");
         return -1;
     }
     
-    /* 3. Récupération de l'adresse IP */
-    WIFI_GetIP_Address(ipAddress);
+    /* 3. Récupération de l'adresse IP (Ajout du paramètre '4') */
+    WIFI_GetIP_Address(ipAddress, 4);
     printf("[WIFI] Connecte avec succes a Internet ! \r\n");
     printf("[WIFI] Adresse IP locale : %d.%d.%d.%d\r\n", 
            ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
