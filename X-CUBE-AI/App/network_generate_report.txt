@@ -1,30 +1,30 @@
 ST Edge AI Core v2.2.0-20266 2adc00962
-Created date          : 2026-05-05 01:34:57
-Parameters            : generate --target stm32l4 --name network -m C:/Users/AIO/Downloads/fadec_edge_ai_model.tflite --compression none --verbosity 1 --workspace C:/Users/AIO/AppData/Local/Temp/mxAI_workspace28633515749680014120194060477877149 --output C:/Users/AIO/.stm32cubemx/network_output
+Created date          : 2026-05-05 16:38:41
+Parameters            : generate --target stm32l4 --name network -m C:/Users/AIO/Downloads/fadec_edge_ai_model.tflite --compression none --verbosity 1 --workspace C:/Users/AIO/AppData/Local/Temp/mxAI_workspace3405251698433004205567070176939575 --output C:/Users/AIO/.stm32cubemx/network_output
 
 Exec/report summary (generate)
------------------------------------------------------------------------------------------------------------
-model file         :   C:\Users\AIO\Downloads\fadec_edge_ai_model.tflite                                   
-type               :   tflite                                                                              
-c_name             :   network                                                                             
-compression        :   none                                                                                
-options            :   allocate-inputs, allocate-outputs                                                   
-optimization       :   balanced                                                                            
-target/series      :   stm32l4                                                                             
-workspace dir      :   C:\Users\AIO\AppData\Local\Temp\mxAI_workspace28633515749680014120194060477877149   
-output dir         :   C:\Users\AIO\.stm32cubemx\network_output                                            
-model_fmt          :   float                                                                               
-model_name         :   fadec_edge_ai_model                                                                 
-model_hash         :   0xf4d1c4c22c405c855f2ff305d0af2484                                                  
-params #           :   73 items (292 B)                                                                    
------------------------------------------------------------------------------------------------------------
-input 1/1          :   'serving_default_ke.._tensor_90', f32(1x3), 12 Bytes, activations                   
-output 1/1         :   'nl_3', f32(1x1), 4 Bytes, activations                                              
-macc               :   95                                                                                  
-weights (ro)       :   292 B (292 B) (1 segment)                                                           
-activations (rw)   :   48 B (48 B) (1 segment) *                                                           
-ram (total)        :   48 B (48 B) = 48 + 0 + 0                                                            
------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------
+model file         :   C:\Users\AIO\Downloads\fadec_edge_ai_model.tflite                                  
+type               :   tflite                                                                             
+c_name             :   network                                                                            
+compression        :   none                                                                               
+options            :   allocate-inputs, allocate-outputs                                                  
+optimization       :   balanced                                                                           
+target/series      :   stm32l4                                                                            
+workspace dir      :   C:\Users\AIO\AppData\Local\Temp\mxAI_workspace3405251698433004205567070176939575   
+output dir         :   C:\Users\AIO\.stm32cubemx\network_output                                           
+model_fmt          :   float                                                                              
+model_name         :   fadec_edge_ai_model                                                                
+model_hash         :   0xf4d1c4c22c405c855f2ff305d0af2484                                                 
+params #           :   73 items (292 B)                                                                   
+----------------------------------------------------------------------------------------------------------
+input 1/1          :   'serving_default_ke.._tensor_90', f32(1x3), 12 Bytes, activations                  
+output 1/1         :   'nl_3', f32(1x1), 4 Bytes, activations                                             
+macc               :   95                                                                                 
+weights (ro)       :   292 B (292 B) (1 segment)                                                          
+activations (rw)   :   48 B (48 B) (1 segment) *                                                          
+ram (total)        :   48 B (48 B) = 48 + 0 + 0                                                           
+----------------------------------------------------------------------------------------------------------
 (*) 'input'/'output' buffers are allocated in the activations buffer
 
 Model name - fadec_edge_ai_model

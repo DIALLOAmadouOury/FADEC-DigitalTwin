@@ -360,44 +360,44 @@
   ],
   "environment": {
     "generated_model": {
-      "generated_time": "2026-05-05T01:34:53+0200",
+      "generated_time": "2026-05-05T16:38:32+0200",
       "model_files": [
         {
           "name": "network_data_params.h",
-          "signature": "0x1be40fa3ba40a32febdfe596a3f2e0e8"
+          "signature": "0xb39266195048d28831324dbecd1c57c1"
         },
         {
           "name": "network_data_params.c",
-          "signature": "0x1283ff662a862084045b43cf1171aef1"
+          "signature": "0x3d834ee6f493e32a265b3a69ca6e069b"
         },
         {
           "name": "network_data.h",
-          "signature": "0x457c880c5923096fc6f30f557668ef2e"
+          "signature": "0x41debb8af5ec7ddb9270d2da3858d464"
         },
         {
           "name": "network_data.c",
-          "signature": "0x86e522e4b10aca0f649a54a379abfaee"
+          "signature": "0x9f779e4a7c2cb200a642dda675050ced"
         },
         {
           "name": "network_config.h",
-          "signature": "0x0d8713467041809b019132ed3700bbca"
+          "signature": "0x4507f4397f1735c6097c9f432d03148c"
         },
         {
           "name": "network.h",
-          "signature": "0x7a3f52620995a16b3a45931faf17c0f5"
+          "signature": "0xff643103580b665d77144b1434c1c7bd"
         },
         {
           "name": "network.c",
-          "signature": "0xbea503626ffe7c2d0639406323f5c299"
+          "signature": "0x2a1188d8955808c08f68c078598bea75"
         }
       ],
       "name": "network"
     },
-    "network_signature": "0xb5b6e5d676a9c401",
+    "network_signature": "0x16fc85f7c43b4187",
     "test_name": "",
     "tools": [
       {
-        "arguments": "generate --target stm32l4 --name network -m C:/Users/AIO/Downloads/fadec_edge_ai_model.tflite --compression none --verbosity 1 --workspace C:/Users/AIO/AppData/Local/Temp/mxAI_workspace28633515749680014120194060477877149 --output C:/Users/AIO/.stm32cubemx/network_output",
+        "arguments": "generate --target stm32l4 --name network -m C:/Users/AIO/Downloads/fadec_edge_ai_model.tflite --compression none --verbosity 1 --workspace C:/Users/AIO/AppData/Local/Temp/mxAI_workspace3405251698433004205567070176939575 --output C:/Users/AIO/.stm32cubemx/network_output",
         "environment": [
           "STATS_TYPE=X-CUBE-AI"
         ],
