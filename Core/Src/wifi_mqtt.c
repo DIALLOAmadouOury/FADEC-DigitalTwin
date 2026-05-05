@@ -1,7 +1,6 @@
 /**
  ******************************************************************************
  * @file    wifi_mqtt.c
- * @author  [Ton Nom / Ton Pseudo GitHub]
  * @version V1.0.0
  * @date    2026-05-05
  * @brief   Implémentation de la surveillance FADEC Edge AI avec télémétrie Wi-Fi.
@@ -15,6 +14,7 @@
  * - Connexion Wi-Fi WPA2 (Identifiants protégés via secrets.h).
  * - Implémentation d'un client MQTT ultra-léger "from scratch" via Sockets TCP.
  * - Envoi de la télémétrie formatée en JSON vers un Broker public (HiveMQ).
+ * - RECEPTION (Bi-directionnel) des ordres depuis le Dashboard Python.
  ******************************************************************************
  */
 
@@ -89,6 +89,7 @@ int8_t WifiMqtt_HardwareInit(void) {
            
     return 0;
 }
+
 /**
  * @brief  Ouvre une socket TCP et forge la trame MQTT CONNECT.
  * @note   Utilise une trame hexadécimale minimaliste pour éviter la surcharge logicielle.
@@ -172,6 +173,35 @@ int8_t MQTT_Publish(const char* topic, const char* payload) {
     return 0;
 }
 
+/* ============================================================================== */
+/* === NOUVEAU : FONCTION DE RÉCEPTION DES ORDRES (BI-DIRECTIONNEL)           === */
+/* ============================================================================== */
+
+/**
+ * @brief  Écoute le socket TCP pour recevoir les ordres du Dashboard Python.
+ * @details Modifie les paramètres physiques du Jumeau Numérique en temps réel.
+ */
+void CheckForIncomingCommands(void) {
+    uint8_t rx_buffer[128];
+    uint16_t rx_len = 0;
+    
+    /* Lecture non-bloquante du socket TCP (Timeout très court : 50ms) */
+    if (WIFI_ReceiveData(socket_id, rx_buffer, sizeof(rx_buffer), &rx_len, 50) == WIFI_STATUS_OK) {
+        if (rx_len > 0) {
+            rx_buffer[rx_len] = '\0'; /* Sécuriser la fin de la chaîne */
+            
+            /* Recherche de la clé "leak_cmd" envoyée par le Dashboard Python */
+            if (strstr((char*)rx_buffer, "\"leak_cmd\": 1") != NULL) {
+                printf("\r\n[CMD RECUE] 🚨 INJECTION D'ANOMALIE DECLENCHEE 🚨\r\n");
+                myEngine.leak_factor = 2.5f; /* On altère la physique (Fuite de carburant !) */
+            } 
+            else if (strstr((char*)rx_buffer, "\"leak_cmd\": 0") != NULL) {
+                printf("\r\n[CMD RECUE] 🛠️ REPARATION DU MOTEUR\r\n");
+                myEngine.leak_factor = 1.0f; /* Retour à la normale (Moteur sain) */
+            }
+        }
+    }
+}
 
 /* ============================================================================== */
 /* === TÂCHE PRINCIPALE FREERTOS (CORE LOGIC)                                 === */
@@ -261,5 +291,8 @@ void StartMqttTask(void *argument) {
         
         /* Pause non-bloquante pour permettre au processeur de gérer la pile réseau */
         osDelay(500); 
+        
+        /* --- Etape E (NOUVEAU) : Vérification des ordres distants --- */
+        CheckForIncomingCommands();
     }
 }
