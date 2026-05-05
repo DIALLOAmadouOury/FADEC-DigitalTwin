@@ -4,16 +4,6 @@
   * @file    stm32l4xx_it.c
   * @brief   Interrupt Service Routines.
   ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2026 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
   */
 /* USER CODE END Header */
 
@@ -22,6 +12,7 @@
 #include "stm32l4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -51,7 +42,9 @@
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+/* --- VARIABLES DU DRIVER WI-FI INVENTEK --- */
+extern SPI_HandleTypeDef hspi;  /* Le handle secret défini dans es_wifi_io.c */
+extern void SPI_WIFI_ISR(void); /* La fonction qui signale que le Wi-Fi est prêt */
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
@@ -69,14 +62,9 @@ extern TIM_HandleTypeDef htim6;
   */
 void NMI_Handler(void)
 {
-  /* USER CODE BEGIN NonMaskableInt_IRQn 0 */
-
-  /* USER CODE END NonMaskableInt_IRQn 0 */
-  /* USER CODE BEGIN NonMaskableInt_IRQn 1 */
-   while (1)
+  while (1)
   {
   }
-  /* USER CODE END NonMaskableInt_IRQn 1 */
 }
 
 /**
@@ -84,13 +72,8 @@ void NMI_Handler(void)
   */
 void HardFault_Handler(void)
 {
-  /* USER CODE BEGIN HardFault_IRQn 0 */
-
-  /* USER CODE END HardFault_IRQn 0 */
   while (1)
   {
-    /* USER CODE BEGIN W1_HardFault_IRQn 0 */
-    /* USER CODE END W1_HardFault_IRQn 0 */
   }
 }
 
@@ -99,13 +82,8 @@ void HardFault_Handler(void)
   */
 void MemManage_Handler(void)
 {
-  /* USER CODE BEGIN MemoryManagement_IRQn 0 */
-
-  /* USER CODE END MemoryManagement_IRQn 0 */
   while (1)
   {
-    /* USER CODE BEGIN W1_MemoryManagement_IRQn 0 */
-    /* USER CODE END W1_MemoryManagement_IRQn 0 */
   }
 }
 
@@ -114,13 +92,8 @@ void MemManage_Handler(void)
   */
 void BusFault_Handler(void)
 {
-  /* USER CODE BEGIN BusFault_IRQn 0 */
-
-  /* USER CODE END BusFault_IRQn 0 */
   while (1)
   {
-    /* USER CODE BEGIN W1_BusFault_IRQn 0 */
-    /* USER CODE END W1_BusFault_IRQn 0 */
   }
 }
 
@@ -129,13 +102,8 @@ void BusFault_Handler(void)
   */
 void UsageFault_Handler(void)
 {
-  /* USER CODE BEGIN UsageFault_IRQn 0 */
-
-  /* USER CODE END UsageFault_IRQn 0 */
   while (1)
   {
-    /* USER CODE BEGIN W1_UsageFault_IRQn 0 */
-    /* USER CODE END W1_UsageFault_IRQn 0 */
   }
 }
 
@@ -144,12 +112,6 @@ void UsageFault_Handler(void)
   */
 void DebugMon_Handler(void)
 {
-  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
-
-  /* USER CODE END DebugMonitor_IRQn 0 */
-  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
-
-  /* USER CODE END DebugMonitor_IRQn 1 */
 }
 
 /******************************************************************************/
@@ -169,7 +131,10 @@ void EXTI1_IRQHandler(void)
   /* USER CODE END EXTI1_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(WIFI_DATARDY_Pin);
   /* USER CODE BEGIN EXTI1_IRQn 1 */
-
+  
+  /* --- CODE AJOUTÉ : On réveille le driver Wi-Fi --- */
+  SPI_WIFI_ISR(); 
+  
   /* USER CODE END EXTI1_IRQn 1 */
 }
 
@@ -202,5 +167,15 @@ void TIM6_DAC_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+
+/**
+  * @brief This function handles SPI3 global interrupt.
+  * @note  Ajouté manuellement car requis par le driver Wi-Fi ST.
+  */
+void SPI3_IRQHandler(void)
+{
+  /* On redirige l'interruption vers le handle 'hspi' du driver Inventek */
+  HAL_SPI_IRQHandler(&hspi);
+}
 
 /* USER CODE END 1 */
