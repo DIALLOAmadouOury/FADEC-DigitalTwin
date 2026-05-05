@@ -193,11 +193,11 @@ void CheckForIncomingCommands(void) {
             /* Recherche de la clé "leak_cmd" envoyée par le Dashboard Python */
             if (strstr((char*)rx_buffer, "\"leak_cmd\": 1") != NULL) {
                 printf("\r\n[CMD RECUE] 🚨 INJECTION D'ANOMALIE DECLENCHEE 🚨\r\n");
-                myEngine.leak_factor = 2.5f; /* On altère la physique (Fuite de carburant !) */
+                myEngine.has_leak = 1; /* Activation de la fuite dans le jumeau numérique */
             } 
             else if (strstr((char*)rx_buffer, "\"leak_cmd\": 0") != NULL) {
                 printf("\r\n[CMD RECUE] 🛠️ REPARATION DU MOTEUR\r\n");
-                myEngine.leak_factor = 1.0f; /* Retour à la normale (Moteur sain) */
+                myEngine.has_leak = 0; /* Désactivation de la fuite (Moteur sain) */
             }
         }
     }
@@ -292,7 +292,7 @@ void StartMqttTask(void *argument) {
         /* Pause non-bloquante pour permettre au processeur de gérer la pile réseau */
         osDelay(500); 
         
-        /* --- Etape E (NOUVEAU) : Vérification des ordres distants --- */
+        /* --- Etape E : Vérification des ordres distants --- */
         CheckForIncomingCommands();
     }
 }
