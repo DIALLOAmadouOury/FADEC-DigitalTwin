@@ -71,21 +71,24 @@ int8_t WifiMqtt_HardwareInit(void) {
            macAddress[0], macAddress[1], macAddress[2], 
            macAddress[3], macAddress[4], macAddress[5]);
 
-    printf("[WIFI] Tentative de connexion au reseau sans fil...\r\n");
+    /* --- TEST DE CONNEXION EN DUR --- */
+    char *test_ssid = "Aod";
+    char *test_pass = "Diallo@2";
     
-    /* Utilisation des macros sécurisées définies dans secrets.h */
-    if (WIFI_Connect(WIFI_SSID, WIFI_PASSWORD, WIFI_ECN_WPA2_PSK) != WIFI_STATUS_OK) {
-        printf("[ERREUR] Echec WPA2. Verifiez le SSID ou le mot de passe.\r\n");
+    printf("[WIFI] Tentative : SSID=[%s] PWD=[%s]\r\n", test_ssid, test_pass);
+    
+    if (WIFI_Connect(test_ssid, test_pass, WIFI_ECN_WPA2_PSK) != WIFI_STATUS_OK) {
+        printf("[ERREUR] Echec WPA2. Le module ne parvient pas a s'associer.\r\n");
         return -1;
     }
+    /* -------------------------------- */
     
     WIFI_GetIP_Address(ipAddress, 4);
-    printf("[WIFI] Connecte avec succes ! IP locale : %d.%d.%d.%d\r\n", 
+    printf("[WIFI] Connecte ! IP : %d.%d.%d.%d\r\n", 
            ipAddress[0], ipAddress[1], ipAddress[2], ipAddress[3]);
            
     return 0;
 }
-
 /**
  * @brief  Ouvre une socket TCP et forge la trame MQTT CONNECT.
  * @note   Utilise une trame hexadécimale minimaliste pour éviter la surcharge logicielle.
