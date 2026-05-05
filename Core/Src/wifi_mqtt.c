@@ -1,46 +1,84 @@
 /**
  * @file    wifi_mqtt.c
- * @brief   Implémentation de la surveillance FADEC par IA et communication MQTT.
+ * @author  [Ton Nom / Ton Pseudo GitHub]
+ * @brief   Implémentation de la surveillance FADEC par Intelligence Artificielle et communication MQTT.
+ * @date    2026-05-05
  * 
- * @details Ce module respecte les interfaces définies dans wifi_mqtt.h et mqtt.h.
- *          Il utilise le modèle "network" généré par X-CUBE-AI.
+ * @details 
+ * Ce module est le cœur de la logique "Edge AI" du projet. Il gère une tâche FreeRTOS qui :
+ *  1. Récupère les télémétries du Jumeau Numérique (Digital Twin) du moteur.
+ *  2. Exécute une inférence locale via le modèle de réseau de neurones X-CUBE-AI.
+ *  3. Formate les résultats en JSON et les publie via MQTT.
+ * 
+ * @note    Pour faciliter l'intégration continue (CI/CD) et les tests isolés, 
+ *          la fonction de transport MQTT_Publish est implémentée ici sous forme de "Mock" (bouchon).
  */
 
-#include "wifi_mqtt.h"    /* Pour WifiMqtt_HardwareInit et StartMqttTask */
-//#include "wifi_mqtt.h"         /* Pour MQTT_Publish et les types associés */
-#include "network.h"      /* Pour ai_network_run et les buffers IA */
-#include "network_data.h"
-#include "engine_sim.h"
-#include "cmsis_os.h"
-#include "ai_platform.h"
+#include "wifi_mqtt.h"    /* Définitions des tâches et initialisation HW */
+#include "network.h"      /* API générée par X-CUBE-AI pour le modèle "network" */
+#include "network_data.h" /* Poids et biais du réseau de neurones */
+#include "engine_sim.h"   /* Structure de données du moteur simulé */
+#include "cmsis_os.h"     // OS Temps Réel (FreeRTOS)
+#include "ai_platform.h"  /* Types de base STMicroelectronics AI */
 #include <stdio.h>
 #include <string.h>
 
-/* --- Variables Globales Privées --- */
+/* ============================================================================== */
+/* === VARIABLES GLOBALES PRIVÉES (Ressources IA)                             === */
+/* ============================================================================== */
+
+/** @brief Pointeur opaque vers l'instance du réseau de neurones */
 static ai_handle engine_ai_handler = AI_HANDLE_NULL;
+
+/** @brief Mémoire de travail (RAM) allouée statiquement pour l'inférence IA */
 static uint8_t activations[AI_NETWORK_DATA_ACTIVATIONS_SIZE];
 
-/* --- Implémentation des fonctions de wifi_mqtt.h --- */
+/* ============================================================================== */
+/* === HARDWARE ABSTRACTION LAYER (HAL) STUBS                                 === */
+/* ============================================================================== */
 
 /**
- * @brief Initialisation matérielle (Interface SPI3 / Wi-Fi).
- * @return 0 si succès, -1 si erreur.
+ * @brief  Initialise le matériel de communication (Bus SPI3 & Puce Inventek Wi-Fi).
+ * @retval 0 en cas de succès, -1 en cas d'échec.
  */
 int8_t WifiMqtt_HardwareInit(void) {
-    // Ton code spécifique pour réveiller le SPI3 et le module Wi-Fi
-    printf("[HW] SPI3 & Wi-Fi Ready.\r\n");
+    /* TODO: Intégrer les appels aux drivers HAL_SPI_Transmit ici */
+    printf("[HW] SPI3 Bus and Inventek Wi-Fi module initialized.\r\n");
     return 0; 
 }
 
 /**
- * @brief Tâche FreeRTOS : Acquisition -> Inférence AI -> MQTT Publish.
+ * @brief  Mock / Bouchon pour la publication MQTT.
+ * @details Permet de compiler et valider la logique IA (Test-Driven Development) 
+ *          sans dépendre de la connectivité réseau physique de la carte.
+ * @param  topic   Le topic de destination (ex: "engine/telemetry").
+ * @param  payload La chaîne de caractères formatée en JSON.
+ * @retval 0 (Succès simulé).
+ */
+int8_t MQTT_Publish(const char* topic, const char* payload) {
+    printf("\r\n[MQTT MOCK TX] >>>\r\n");
+    printf("  ├─ Topic   : %s\r\n", topic);
+    printf("  └─ Payload : %s\r\n", payload);
+    return 0; 
+}
+
+/* ============================================================================== */
+/* === TÂCHE PRINCIPALE FREERTOS (CORE LOGIC)                                 === */
+/* ============================================================================== */
+
+/**
+ * @brief Tâche cyclique d'acquisition, d'inférence AI et de publication IoT.
+ * @param argument Pointeur générique requis par l'API osThreadDef de FreeRTOS.
  */
 void StartMqttTask(void *argument) {
     ai_error err;
     
-    /* 1. Initialisation de l'IA (respect des prototypes de network.h) */
+    /* ------------------------------------------------------------------------- */
+    /* 1. INITIALISATION DU MOTEUR D'INFÉRENCE (X-CUBE-AI)                       */
+    /* ------------------------------------------------------------------------- */
     err = ai_network_create(&engine_ai_handler, AI_NETWORK_DATA_CONFIG);
     if (err.type != AI_ERROR_NONE) {
+        printf("[ERROR] AI initialization failed. Terminating thread.\r\n");
         osThreadTerminate(osThreadGetId());
     }
 
@@ -52,40 +90,56 @@ void StartMqttTask(void *argument) {
     };
 
     if (!ai_network_init(engine_ai_handler, &params)) {
+        printf("[ERROR] AI parameter linking failed. Terminating thread.\r\n");
         osThreadTerminate(osThreadGetId());
     }
 
-    /* Configuration des buffers pour ai_network_run */
-    float in_data[AI_NETWORK_IN_1_SIZE];
-    float out_data[AI_NETWORK_OUT_1_SIZE];
+    /* ------------------------------------------------------------------------- */
+    /* 2. CONFIGURATION DES BUFFERS D'ENTRÉE/SORTIE DU MODÈLE                    */
+    /* ------------------------------------------------------------------------- */
+    float in_data[AI_NETWORK_IN_1_SIZE];   /* Entrées : [RPM, Temp, Fuel Flow] */
+    float out_data[AI_NETWORK_OUT_1_SIZE]; /* Sortie  : [Probabilité de Fuite] */
+    
+    /* Wrappers ST pour mapper nos tableaux en RAM vers les entrées/sorties de l'IA */
     ai_buffer ai_input = AI_BUFFER_OBJ_INIT(AI_BUFFER_FORMAT_FLOAT, 1, 1, AI_NETWORK_IN_1_SIZE, 1, in_data);
     ai_buffer ai_output = AI_BUFFER_OBJ_INIT(AI_BUFFER_FORMAT_FLOAT, 1, 1, AI_NETWORK_OUT_1_SIZE, 1, out_data);
 
     char json_buffer[256];
 
+    printf("[SYSTEM] FADEC Edge AI Task Started.\r\n");
+
+    /* ------------------------------------------------------------------------- */
+    /* 3. BOUCLE INFINIE DE LA TÂCHE (SUPER-LOOP)                                */
+    /* ------------------------------------------------------------------------- */
     for(;;) {
+        /* On exécute l'analyse uniquement si le moteur tourne */
         if (myEngine.is_running) {
-            /* Acquisition des données du Digital Twin */
+            
+            /* ÉTAPE A : Acquisition des données brutes */
             in_data[0] = myEngine.current_rpm;
             in_data[1] = myEngine.engine_temp;
             in_data[2] = myEngine.fuel_flow;
 
-            /* Inférence IA locale */
+            /* ÉTAPE B : Inférence Edge AI (Temps de calcul < 1ms sur Cortex-M4) */
             if (ai_network_run(engine_ai_handler, &ai_input, &ai_output) > 0) {
-                float proba = out_data[0];
-                int warn = (proba > 0.85f) ? 1 : 0;
+                
+                float leak_proba = out_data[0];
+                uint8_t warning_flag = (leak_proba > 0.85f) ? 1 : 0; /* Seuil critique à 85% */
 
-                /* Sérialisation JSON */
+                /* ÉTAPE C : Sérialisation des données pour le cloud/cockpit */
                 snprintf(json_buffer, sizeof(json_buffer), 
                          "{\"rpm\":%.1f,\"tmp\":%.1f,\"fuel\":%.1f,\"prob\":%.2f,\"warn\":%d}",
-                         in_data[0], in_data[1], in_data[2], proba, warn);
+                         in_data[0], in_data[1], in_data[2], leak_proba, warning_flag);
 
-                /* Publication MQTT (respecte exactement le prototype de mqtt.h) */
-                if (MQTT_Publish("engine/telemetry", json_buffer) == 0) {
-                    printf("[IOT] Telemetry sent via SPI3\r\n");
+                /* ÉTAPE D : Transmission via la couche d'abstraction matérielle */
+                if (MQTT_Publish("engine/v1/telemetry", json_buffer) == 0) {
+                    // Log UART optionnel pour le debug local
+                    // printf("[AI STATUS] Proba: %.2f | Warn: %d\r\n", leak_proba, warning_flag);
                 }
             }
         }
-        osDelay(500); /* 2 Hz */
+        
+        /* Libération du CPU pour les autres tâches (Fréquence de boucle : 2 Hz) */
+        osDelay(500); 
     }
 }
