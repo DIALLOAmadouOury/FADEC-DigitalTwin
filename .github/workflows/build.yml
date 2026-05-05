@@ -17,6 +17,15 @@ jobs:
       with:
         release: '12.2.Rel1'
 
+    - name: 🔐 Générer un fichier secrets.h factice pour la CI
+      run: |
+        mkdir -p Core/Inc
+        echo '#ifndef SECRETS_H' > Core/Inc/secrets.h
+        echo '#define SECRETS_H' >> Core/Inc/secrets.h
+        echo '#define WIFI_SSID "TEST_CI"' >> Core/Inc/secrets.h
+        echo '#define WIFI_PASSWORD "TEST_CI"' >> Core/Inc/secrets.h
+        echo '#endif' >> Core/Inc/secrets.h
+
     - name: 🚀 Lancer la compilation
       run: make -j$(nproc)
 
