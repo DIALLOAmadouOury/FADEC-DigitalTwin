@@ -231,7 +231,7 @@ void StartMqttTask(void *argument) {
     printf("\r\n[SYSTEM] FADEC Task Ready. En attente de demarrage distant...\r\n");
     
     /* Sécurité : le moteur jumeau démarre éteint et sain */
-    myEngine.is_running = 1; 
+    myEngine.is_running = 0; 
     myEngine.has_leak = 0; 
 
     /* --- 4. Boucle infinie FreeRTOS --- */
