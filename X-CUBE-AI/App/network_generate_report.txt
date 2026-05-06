@@ -1,40 +1,40 @@
 ST Edge AI Core v2.2.0-20266 2adc00962
-Created date          : 2026-05-06 16:54:16
-Parameters            : generate --target stm32l4 --name network -m C:/Users/AIO/Downloads/fadec_edge_ai_model.tflite --compression none --verbosity 1 --workspace C:/Users/AIO/AppData/Local/Temp/mxAI_workspace42789061273050016654554642945492049 --output C:/Users/AIO/.stm32cubemx/network_output
+Created date          : 2026-05-06 18:09:16
+Parameters            : generate --target stm32l4 --name network -m C:/Users/AIO/Downloads/fadec_edge_ai_model (2).tflite --compression none --verbosity 1 --workspace C:/Users/AIO/AppData/Local/Temp/mxAI_workspace4323927033262009114104720446283934 --output C:/Users/AIO/.stm32cubemx/network_output
 
 Exec/report summary (generate)
------------------------------------------------------------------------------------------------------------
-model file         :   C:\Users\AIO\Downloads\fadec_edge_ai_model.tflite                                   
-type               :   tflite                                                                              
-c_name             :   network                                                                             
-compression        :   none                                                                                
-options            :   allocate-inputs, allocate-outputs                                                   
-optimization       :   balanced                                                                            
-target/series      :   stm32l4                                                                             
-workspace dir      :   C:\Users\AIO\AppData\Local\Temp\mxAI_workspace42789061273050016654554642945492049   
-output dir         :   C:\Users\AIO\.stm32cubemx\network_output                                            
-model_fmt          :   float                                                                               
-model_name         :   fadec_edge_ai_model                                                                 
-model_hash         :   0xf4d1c4c22c405c855f2ff305d0af2484                                                  
-params #           :   73 items (292 B)                                                                    
------------------------------------------------------------------------------------------------------------
-input 1/1          :   'serving_default_ke.._tensor_90', f32(1x3), 12 Bytes, activations                   
-output 1/1         :   'nl_3', f32(1x1), 4 Bytes, activations                                              
-macc               :   95                                                                                  
-weights (ro)       :   292 B (292 B) (1 segment)                                                           
-activations (rw)   :   48 B (48 B) (1 segment) *                                                           
-ram (total)        :   48 B (48 B) = 48 + 0 + 0                                                            
------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------
+model file         :   C:\Users\AIO\Downloads\fadec_edge_ai_model (2).tflite                              
+type               :   tflite                                                                             
+c_name             :   network                                                                            
+compression        :   none                                                                               
+options            :   allocate-inputs, allocate-outputs                                                  
+optimization       :   balanced                                                                           
+target/series      :   stm32l4                                                                            
+workspace dir      :   C:\Users\AIO\AppData\Local\Temp\mxAI_workspace4323927033262009114104720446283934   
+output dir         :   C:\Users\AIO\.stm32cubemx\network_output                                           
+model_fmt          :   float                                                                              
+model_name         :   fadec_edge_ai_model_2                                                              
+model_hash         :   0x1935c3c37586ba46ed1838556f3ea0c8                                                 
+params #           :   73 items (292 B)                                                                   
+----------------------------------------------------------------------------------------------------------
+input 1/1          :   'serving_default_ke.._tensor_80', f32(1x3), 12 Bytes, activations                  
+output 1/1         :   'nl_3', f32(1x1), 4 Bytes, activations                                             
+macc               :   95                                                                                 
+weights (ro)       :   292 B (292 B) (1 segment)                                                          
+activations (rw)   :   48 B (48 B) (1 segment) *                                                          
+ram (total)        :   48 B (48 B) = 48 + 0 + 0                                                           
+----------------------------------------------------------------------------------------------------------
 (*) 'input'/'output' buffers are allocated in the activations buffer
 
-Model name - fadec_edge_ai_model
+Model name - fadec_edge_ai_model_2
 ------ ------------------------------------------------ ----------- ------------ ------ -------------------------------- --- --------------- -------------- ---------------------------- 
 m_id   layer (type,original)                            oshape      param/size     macc                     connected to   | c_size          c_macc         c_type                       
 ------ ------------------------------------------------ ----------- ------------ ------ -------------------------------- --- --------------- -------------- ---------------------------- 
-0      serving_default_ke.._tensor_90 (Input, )         [b:1,c:3]                                                          | +128(+100.0%)   +40(+100.0%)   Dense_/Nonlinearity_[0, 1]   
+0      serving_default_ke.._tensor_80 (Input, )         [b:1,c:3]                                                          | +128(+100.0%)   +40(+100.0%)   Dense_/Nonlinearity_[0, 1]   
        sequential_2_1_Inp..r_1_MatMul (Placeholder, )   [b:8,c:3]   24/96                                                  | -96(-100.0%)                   
        sequential_2_1_Inp.._1_BiasAdd (Placeholder, )   [b:8]       8/32                                                   | -32(-100.0%)                   
-       gemm_0 (Gemm, FULLY_CONNECTED)                   [b:1,c:8]                    32   serving_default_ke.._tensor_90   |                 -32(-100.0%)   
+       gemm_0 (Gemm, FULLY_CONNECTED)                   [b:1,c:8]                    32   serving_default_ke.._tensor_80   |                 -32(-100.0%)   
                                                                                           sequential_2_1_Inp..r_1_MatMul   | 
                                                                                           sequential_2_1_Inp.._1_BiasAdd   | 
        nl_0_nl (Nonlinearity, FULLY_CONNECTED)          [b:1,c:8]                     8                           gemm_0   |                 -8(-100.0%)    
@@ -60,14 +60,14 @@ model/c-model: macc=95/95  weights=292/292  activations=--/48 io=--/0
 
 Generated C-graph summary
 ------------------------------------------------------------------------------------------------------------------------
-model name            : fadec_edge_ai_model
+model name            : fadec_edge_ai_model_2
 c-name                : network
 c-node #              : 6
 c-array #             : 13
 activations size      : 48 (1 segment)
 weights size          : 292 (1 segment)
 macc                  : 95
-inputs                : ['serving_default_keras_tensor_90_output']
+inputs                : ['serving_default_keras_tensor_80_output']
 outputs               : ['nl_3_output']
 
 C-Arrays (13)
@@ -86,14 +86,14 @@ c_id   name (*_array)                           item/size   domain/mem-pool     
 9      nl_0_nl_output                           8/32        activations/**default**   float                   
 10     nl_1_nl_output                           4/16        activations/**default**   float                   
 11     nl_3_output                              1/4         activations/**default**   float         /output   
-12     serving_default_keras_tensor_90_output   3/12        activations/**default**   float         /input    
+12     serving_default_keras_tensor_80_output   3/12        activations/**default**   float         /input    
 ------ ---------------------------------------- ----------- ------------------------- ------------- --------- 
 
 C-Layers (6)
 ------ ---------------- ---- --------------- ------ ----- ------------------------------------------- ------------------ 
 c_id   name (*_layer)   id   layer_type      macc   rom   tensors                                     shape (array id)   
 ------ ---------------- ---- --------------- ------ ----- ------------------------------------------- ------------------ 
-0      gemm_0           0    Dense           32     128   I: serving_default_keras_tensor_90_output   f32(1x3) (12)      
+0      gemm_0           0    Dense           32     128   I: serving_default_keras_tensor_80_output   f32(1x3) (12)      
                                                           W: gemm_0_weights                           f32(8x3) (2)       
                                                           W: gemm_0_bias                              f32(8) (0)         
                                                           O: gemm_0_output                            f32(1x8) (1)       
@@ -144,7 +144,7 @@ Complexity report (model)
 ------ --------------------------------- ------------------------- ------------------------- -------- 
 m_id   name                              c_macc                    c_rom                     c_id     
 ------ --------------------------------- ------------------------- ------------------------- -------- 
-0      serving_default_keras_tensor_90   ||||||||||||||||  42.1%   ||||||||||||||    43.8%   [0, 1]   
+0      serving_default_keras_tensor_80   ||||||||||||||||  42.1%   ||||||||||||||    43.8%   [0, 1]   
 1      arith_constant3                   ||||||||||||||||  42.1%   ||||||||||||||||  49.3%   [2, 3]   
 2      arith_constant2                   ||                 5.3%   |||                6.8%   [4]      
 3      nl_3                              ||||              10.5%   |                  0.0%   [5]      

@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    network.c
   * @author  AST Embedded Analytics Research Platform
-  * @date    2026-05-06T16:54:10+0200
+  * @date    2026-05-06T18:09:11+0200
   * @brief   AI Tool Automatic Code Generator for Embedded NN computing
   ******************************************************************************
   * @attention
@@ -35,14 +35,14 @@
 #define AI_NET_OBJ_INSTANCE g_network
  
 #undef AI_NETWORK_MODEL_SIGNATURE
-#define AI_NETWORK_MODEL_SIGNATURE     "0xf4d1c4c22c405c855f2ff305d0af2484"
+#define AI_NETWORK_MODEL_SIGNATURE     "0x1935c3c37586ba46ed1838556f3ea0c8"
 
 #ifndef AI_TOOLS_REVISION_ID
 #define AI_TOOLS_REVISION_ID     ""
 #endif
 
 #undef AI_TOOLS_DATE_TIME
-#define AI_TOOLS_DATE_TIME   "2026-05-06T16:54:10+0200"
+#define AI_TOOLS_DATE_TIME   "2026-05-06T18:09:11+0200"
 
 #undef AI_TOOLS_COMPILE_TIME
 #define AI_TOOLS_COMPILE_TIME    __DATE__ " " __TIME__
@@ -58,7 +58,7 @@ static ai_ptr g_network_weights_map[1] = AI_C_ARRAY_INIT;
 /**  Array declarations section  **********************************************/
 /* Array#0 */
 AI_ARRAY_OBJ_DECLARE(
-  serving_default_keras_tensor_90_output_array, AI_ARRAY_FORMAT_FLOAT|AI_FMT_FLAG_IS_IO,
+  serving_default_keras_tensor_80_output_array, AI_ARRAY_FORMAT_FLOAT|AI_FMT_FLAG_IS_IO,
   NULL, NULL, 3, AI_STATIC)
 
 /* Array#1 */
@@ -208,10 +208,10 @@ AI_TENSOR_OBJ_DECLARE(
 
 /* Tensor #12 */
 AI_TENSOR_OBJ_DECLARE(
-  serving_default_keras_tensor_90_output, AI_STATIC,
+  serving_default_keras_tensor_80_output, AI_STATIC,
   12, 0x0,
   AI_SHAPE_INIT(4, 1, 3, 1, 1), AI_STRIDE_INIT(4, 4, 4, 12, 12),
-  1, &serving_default_keras_tensor_90_output_array, NULL)
+  1, &serving_default_keras_tensor_80_output_array, NULL)
 
 
 
@@ -303,7 +303,7 @@ AI_LAYER_OBJ_DECLARE(
 
 AI_TENSOR_CHAIN_OBJ_DECLARE(
   gemm_0_chain, AI_STATIC_CONST, 4,
-  AI_TENSOR_LIST_OBJ_INIT(AI_FLAG_NONE, 1, &serving_default_keras_tensor_90_output),
+  AI_TENSOR_LIST_OBJ_INIT(AI_FLAG_NONE, 1, &serving_default_keras_tensor_80_output),
   AI_TENSOR_LIST_OBJ_INIT(AI_FLAG_NONE, 1, &gemm_0_output),
   AI_TENSOR_LIST_OBJ_INIT(AI_FLAG_NONE, 2, &gemm_0_weights, &gemm_0_bias),
   AI_TENSOR_LIST_OBJ_EMPTY
@@ -328,9 +328,9 @@ AI_NETWORK_OBJ_DECLARE(
   AI_BUFFER_INIT(AI_FLAG_NONE,  AI_BUFFER_FORMAT_U8,
     AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 48, 1, 1),
     48, NULL, NULL),
-  AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_NETWORK_IN_NUM, &serving_default_keras_tensor_90_output),
+  AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_NETWORK_IN_NUM, &serving_default_keras_tensor_80_output),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_NETWORK_OUT_NUM, &nl_3_output),
-  &gemm_0_layer, 0x91bf2560, NULL)
+  &gemm_0_layer, 0x0acfb9f8, NULL)
 
 #else
 
@@ -348,9 +348,9 @@ AI_NETWORK_OBJ_DECLARE(
       AI_BUFFER_SHAPE_INIT(AI_SHAPE_BCWH, 4, 1, 48, 1, 1),
       48, NULL, NULL)
   ),
-  AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_NETWORK_IN_NUM, &serving_default_keras_tensor_90_output),
+  AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_NETWORK_IN_NUM, &serving_default_keras_tensor_80_output),
   AI_TENSOR_LIST_IO_OBJ_INIT(AI_FLAG_NONE, AI_NETWORK_OUT_NUM, &nl_3_output),
-  &gemm_0_layer, 0x91bf2560, NULL)
+  &gemm_0_layer, 0x0acfb9f8, NULL)
 
 #endif	/*(AI_TOOLS_API_VERSION < AI_TOOLS_API_VERSION_1_5)*/
 
@@ -366,8 +366,8 @@ ai_bool network_configure_activations(
   if (ai_platform_get_activations_map(g_network_activations_map, 1, params)) {
     /* Updating activations (byte) offsets */
     
-    serving_default_keras_tensor_90_output_array.data = AI_PTR(g_network_activations_map[0] + 4);
-    serving_default_keras_tensor_90_output_array.data_start = AI_PTR(g_network_activations_map[0] + 4);
+    serving_default_keras_tensor_80_output_array.data = AI_PTR(g_network_activations_map[0] + 4);
+    serving_default_keras_tensor_80_output_array.data_start = AI_PTR(g_network_activations_map[0] + 4);
     gemm_0_output_array.data = AI_PTR(g_network_activations_map[0] + 16);
     gemm_0_output_array.data_start = AI_PTR(g_network_activations_map[0] + 16);
     nl_0_nl_output_array.data = AI_PTR(g_network_activations_map[0] + 16);
@@ -463,7 +463,7 @@ ai_bool ai_network_get_info(
       .params            = AI_STRUCT_INIT,
       .activations       = AI_STRUCT_INIT,
       .n_nodes           = 0,
-      .signature         = 0x91bf2560,
+      .signature         = 0x0acfb9f8,
     };
 
     if (!ai_platform_api_get_network_report(network, &r)) return false;
@@ -511,7 +511,7 @@ ai_bool ai_network_get_report(
       .map_weights       = AI_STRUCT_INIT,
       .map_activations   = AI_STRUCT_INIT,
       .n_nodes           = 0,
-      .signature         = 0x91bf2560,
+      .signature         = 0x0acfb9f8,
     };
 
     if (!ai_platform_api_get_network_report(network, &r)) return false;
