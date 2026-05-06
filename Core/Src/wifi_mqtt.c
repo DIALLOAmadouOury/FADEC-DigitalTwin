@@ -153,36 +153,48 @@ void CheckForIncomingCommands(void) {
     static uint8_t rx_buffer[128];
     uint16_t rx_len = 0;
     
-    /* Lecture avec un Timeout très court (100ms) pour ne pas bloquer l'OS Temps Réel */
     if (WIFI_ReceiveData(socket_id, rx_buffer, sizeof(rx_buffer)-1, &rx_len, 100) == WIFI_STATUS_OK) {
         if (rx_len > 0) {
-            rx_buffer[rx_len] = '\0'; /* Terminaison sécurisée de la chaîne */
             
-            /* 1. Commande globale du moteur (Allumage / Extinction) */
-            if (strstr((char*)rx_buffer, "engine_cmd") != NULL) {
-                if (strstr((char*)rx_buffer, "1") != NULL) {
-                    printf("\r\n[CMD] 🟢 DEMARRAGE DU MOTEUR\r\n");
-                    myEngine.is_running = 1;
-                } else if (strstr((char*)rx_buffer, "0") != NULL) {
-                    printf("\r\n[CMD] 🔴 ARRET DU MOTEUR\r\n");
-                    myEngine.is_running = 0;
+            /* On scanne la mémoire brute octet par octet pour contourner les 0x00 du MQTT */
+            for (uint16_t i = 0; i < rx_len - 10; i++) {
+                
+                /* 1. Détection de la commande MOTEUR */
+                if (strncmp((char*)&rx_buffer[i], "engine_cmd", 10) == 0) {
+                    /* On a trouvé le mot ! On cherche le '1' ou '0' juste après */
+                    for (uint16_t j = i + 10; j < rx_len && j < i + 20; j++) {
+                        if (rx_buffer[j] == '1') {
+                            printf("\r\n[CMD] 🟢 DEMARRAGE DU MOTEUR\r\n");
+                            myEngine.is_running = 1;
+                            break;
+                        } else if (rx_buffer[j] == '0') {
+                            printf("\r\n[CMD] 🔴 ARRET DU MOTEUR\r\n");
+                            myEngine.is_running = 0;
+                            break;
+                        }
+                    }
                 }
-            }
-
-            /* 2. Commande d'injection d'anomalie physique (Fuite Carburant) */
-            if (strstr((char*)rx_buffer, "leak_cmd") != NULL) {
-                if (strstr((char*)rx_buffer, "1") != NULL) {
-                    printf("\r\n[CMD] 🚨 INJECTION DE FUITE\r\n");
-                    myEngine.has_leak = 1;
-                } else if (strstr((char*)rx_buffer, "0") != NULL) {
-                    printf("\r\n[CMD] 🛠️ REPARATION\r\n");
-                    myEngine.has_leak = 0;
+                
+                /* 2. Détection de la commande FUITE */
+                if (strncmp((char*)&rx_buffer[i], "leak_cmd", 8) == 0) {
+                    /* On a trouvé le mot ! On cherche le '1' ou '0' juste après */
+                    for (uint16_t j = i + 8; j < rx_len && j < i + 20; j++) {
+                        if (rx_buffer[j] == '1') {
+                            printf("\r\n[CMD] 🚨 INJECTION DE FUITE\r\n");
+                            myEngine.has_leak = 1;
+                            break;
+                        } else if (rx_buffer[j] == '0') {
+                            printf("\r\n[CMD] 🛠️ REPARATION\r\n");
+                            myEngine.has_leak = 0;
+                            break;
+                        }
+                    }
                 }
-            }
+                
+            } /* Fin du scan mémoire */
         }
     }
 }
-
 /* ============================================================================== */
 /* === TÂCHE PRINCIPALE FREERTOS (CORE LOGIC : IA + TELEMETRIE)               === */
 /* ============================================================================== */
@@ -219,7 +231,7 @@ void StartMqttTask(void *argument) {
     printf("\r\n[SYSTEM] FADEC Task Ready. En attente de demarrage distant...\r\n");
     
     /* Sécurité : le moteur jumeau démarre éteint et sain */
-    myEngine.is_running = 0; 
+    myEngine.is_running = 1; 
     myEngine.has_leak = 0; 
 
     /* --- 4. Boucle infinie FreeRTOS --- */
