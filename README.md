@@ -161,6 +161,20 @@ Le programme se connecte à `broker.hivemq.com:1883` et s'abonne à `stm32/aod/f
 
 À chaque lancement, le script écrit un en-tête CSV dans `fadec_telemetry.csv`, même si ce fichier existe déjà ; ce comportement pourra être amélioré afin d'éviter les en-têtes répétés.
 
+## Démonstration de la supervision
+
+Deux captures du tableau de bord EICAS illustrent un **état nominal** et un **scénario de fuite simulée**. Les captures sont visibles dans [la publication de démonstration sur LinkedIn](https://www.linkedin.com/feed/update/urn:li:activity:7462833268191686657/).
+
+| Paramètre affiché | Fonctionnement nominal | Fuite simulée |
+| --- | ---: | ---: |
+| Régime moteur | 7 500 tr/min | 7 256 tr/min |
+| Température | 446 °C | 427 °C |
+| Débit carburant | 45,0 kg/min | 62,2 kg/min |
+| Score IA affiché | 0,0 % | 93,0 % |
+| État | Système nominal | Alerte de fuite |
+
+Ces valeurs correspondent à **deux instantanés de la simulation**, pas à une campagne de mesures. Le score de **93 %** est la sortie affichée par le modèle pour cet état moteur : **il ne représente pas une accuracy de 93 % sur un jeu de test**. Le tableau de bord affiche artificiellement 0 % lorsque la sortie brute du modèle est inférieure à 45 %.
+
 ## Jeu de données de simulation
 
 Le fichier [`dataset_moteur.csv`](dataset_moteur.csv) contient **223 observations** : **39 lignes étiquetées 0 (normal)** et **184 lignes étiquetées 1 (fuite)**. Il comprend les colonnes `Timestamp`, `RPM`, `Temperature`, `Fuel` et `Label_Fuite`.
