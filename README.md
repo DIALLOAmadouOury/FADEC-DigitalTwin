@@ -1,37 +1,28 @@
-# FADEC Digital Twin — Simulation, régulation PID et TinyML sur STM32
+# FADEC Digital Twin — Jumeau numérique, régulation et diagnostic sur STM32
 
-**STM32L475 · C embarqué · FreeRTOS · PID · X-CUBE-AI · Wi-Fi / MQTT · Python**
+**STM32L475 · C embarqué · FreeRTOS · Régulation PID · TinyML / X-CUBE-AI · Wi-Fi / MQTT · Python**
 
-Ce projet personnel associe un **jumeau numérique simplifié de moteur aéronautique**, une **régulation PID**, une **détection d'anomalies par réseau de neurones embarqué** et une **interface de supervision Python**. L'ensemble est intégré autour d'une carte STM32.
+## Pourquoi ce projet ?
 
-Le **développement firmware en C** occupe une place importante : organisation des tâches FreeRTOS, algorithmes de simulation et de commande, gestion des périphériques STM32, buffers d'inférence et échanges réseau. Mais le projet mobilise aussi le contrôle-commande, le TinyML et la communication IoT.
+Sur un système moteur, commander une grandeur et surveiller son comportement sont deux problèmes complémentaires. Une variation de consigne doit être suivie par le système ; une anomalie peut, au contraire, modifier sa réponse. Ce projet personnel est né de l'envie d'explorer **ces deux aspects sur une même plateforme embarquée**, en ajoutant une supervision accessible depuis un ordinateur.
 
-**[Voir les captures de supervision](#démonstration-de-la-supervision)** · **[Consulter le firmware C](Core/Src/)** · **[Notebook d'entraînement](train_fadec_model.ipynb)**
+L'objectif était de construire sur **STM32L475** un **prototype de moteur aéronautique simulé** capable de **suivre une consigne de régime**, de **reproduire une fuite de carburant**, d'**analyser l'état du moteur avec un petit réseau de neurones** et de **transmettre les résultats vers une interface Python**.
 
-> **Périmètre :** prototype expérimental avec moteur simulé, et non calculateur FADEC aéronautique réel ou certifié.
+Ce travail réunit plusieurs facettes des systèmes embarqués : **développement firmware en C**, modélisation, **contrôle-commande**, **FreeRTOS**, **IA embarquée**, communication réseau et supervision. Le C constitue la base de l'intégration, mais ce n'est pas l'unique sujet du projet.
 
-## Les compétences techniques mises en œuvre
+**[Voir les captures de démonstration](#démonstration-de-la-supervision)** · **[Explorer le code STM32](Core/Src/)** · **[Voir le notebook IA](train_fadec_model.ipynb)**
 
-| Domaine | Réalisation et code associé |
-| --- | --- |
-| **Ordonnancement sous FreeRTOS** | [`main.c`](Core/Src/main.c) : création de `SimTask` (priorité haute), `FadecTask` (normale) et `MqttTask` (basse) ; délais programmés de **10 / 20 / 500 ms** |
-| **Commande et régulation** | [`fadec_core.c`](Core/Src/fadec_core.c) : correcteur **PID**, mémoire de l'erreur, limitation de l'intégrale et saturation de la commande entre 0 et 100 % |
-| **Simulation numérique** | [`engine_sim.c`](Core/Src/engine_sim.c) : évolution du régime, température, décélération à l'arrêt et scénario de fuite de carburant |
-| **Programmation des périphériques STM32** | [`hardware_io.c`](Core/Src/hardware_io.c) : **ADC**, timer **PWM**, callback d'interruption **GPIO/EXTI** pour la demande d'arrêt |
-| **Communication réseau en C** | [`wifi_mqtt.c`](Core/Src/wifi_mqtt.c) : utilisation de l'interface Wi-Fi/TCP, construction manuelle de trames MQTT **CONNECT / SUBSCRIBE / PUBLISH**, buffers statiques et sérialisation **JSON** |
-| **IA intégrée au firmware** | [`wifi_mqtt.c`](Core/Src/wifi_mqtt.c) : normalisation des entrées, buffers du réseau X-CUBE-AI, appel à `ai_network_run()` et émission de la télémétrie |
+> **Périmètre :** démonstrateur expérimental basé sur un modèle logiciel simplifié. Ce n'est ni un moteur réel instrumenté, ni un calculateur FADEC certifié.
 
-**Ce que le projet démontre :** intégrer sur une même cible une simulation numérique, une boucle de régulation, un réseau de neurones et une communication distante. Cette intégration s'appuie sur du **firmware modulaire en C**, l'ordonnancement FreeRTOS et une interface de supervision Python.
+## Ce que le prototype permet de faire
 
-Les tâches utilisent des délais configurés dans FreeRTOS : **il ne s'agit pas de périodes d'exécution mesurées ni d'une garantie temps réel**. Le client MQTT est une implémentation simplifiée destinée à la démonstration, et non une pile réseau industrielle complète.
+Le principe est celui d'une **boucle fermée** : le contrôleur PID compare une consigne au régime simulé et ajuste la commande de carburant. Le moteur virtuel évolue ensuite suivant cette commande : son régime et sa température changent. Les paramètres sont analysés sur le STM32 par le réseau TinyML, puis envoyés au tableau de bord par Wi-Fi/MQTT.
 
-## Présentation du prototype
+L'application Python permet également d'**envoyer des commandes de démarrage, d'arrêt et d'activation d'une fuite simulée**. Dans ce dernier scénario, le moteur virtuel n'utilise plus toute la quantité de carburant commandée : son comportement évolue et l'interface peut afficher une alerte.
 
-Le moteur virtuel fournit un régime, une température et un débit carburant simulés. La régulation calcule la commande, le réseau embarqué analyse les états simulés et le module Wi-Fi transmet la télémétrie vers la supervision Python.
+Les **deux captures plus bas** montrent précisément ces états, en fonctionnement nominal puis avec fuite simulée. Elles servent à illustrer le comportement du prototype, sans représenter une validation d'un moteur réel.
 
-> **Périmètre :** le modèle moteur est expérimental ; les grandeurs publiées ne proviennent pas d'un turboréacteur réel. Les fonctionnalités d'ADC/PWM documentées correspondent à l'interface matérielle du prototype, pas à un actionneur aéronautique.
-
-## Architecture
+## Architecture et circulation des données
 
 ```text
               Consigne de poussée
@@ -63,6 +54,21 @@ Le moteur virtuel fournit un régime, une température et un débit carburant si
 ```
 
 Une fuite de carburant peut être injectée dans le modèle pour modifier son comportement et tester la chaîne de détection. Les modules de commande, de simulation et de communication sont séparés dans le code.
+
+## Compétences mises en pratique dans le code
+
+| Domaine | Réalisation et code associé |
+| --- | --- |
+| **Ordonnancement sous FreeRTOS** | [`main.c`](Core/Src/main.c) : création de `SimTask` (priorité haute), `FadecTask` (normale) et `MqttTask` (basse) ; délais programmés de **10 / 20 / 500 ms** |
+| **Commande et régulation** | [`fadec_core.c`](Core/Src/fadec_core.c) : correcteur **PID**, mémoire de l'erreur, limitation de l'intégrale et saturation de la commande entre 0 et 100 % |
+| **Simulation numérique** | [`engine_sim.c`](Core/Src/engine_sim.c) : évolution du régime, température, décélération à l'arrêt et scénario de fuite de carburant |
+| **Programmation des périphériques STM32** | [`hardware_io.c`](Core/Src/hardware_io.c) : **ADC**, timer **PWM**, callback d'interruption **GPIO/EXTI** pour la demande d'arrêt |
+| **Communication réseau en C** | [`wifi_mqtt.c`](Core/Src/wifi_mqtt.c) : utilisation de l'interface Wi-Fi/TCP, construction manuelle de trames MQTT **CONNECT / SUBSCRIBE / PUBLISH**, buffers statiques et sérialisation **JSON** |
+| **IA intégrée au firmware** | [`wifi_mqtt.c`](Core/Src/wifi_mqtt.c) : normalisation des entrées, buffers du réseau X-CUBE-AI, appel à `ai_network_run()` et émission de la télémétrie |
+
+**Ce que le projet démontre :** intégrer sur une même cible une simulation numérique, une boucle de régulation, un réseau de neurones et une communication distante. Cette intégration s'appuie sur du **firmware modulaire en C**, l'ordonnancement FreeRTOS et une interface de supervision Python.
+
+Les tâches utilisent des délais configurés dans FreeRTOS : **il ne s'agit pas de périodes d'exécution mesurées ni d'une garantie temps réel**. Le client MQTT est une implémentation simplifiée destinée à la démonstration, et non une pile réseau industrielle complète.
 
 ## Fonctionnalités implémentées
 
