@@ -167,20 +167,37 @@ Le fichier [`dataset_moteur.csv`](dataset_moteur.csv) contient **223 observation
 
 Les classes sont déséquilibrées et les observations proviennent d'une courte séquence de simulation ; le fichier seul ne suffit pas à établir la performance du réseau de neurones sur des données indépendantes.
 
+## Entraînement et validation du modèle
+
+Le notebook [`train_fadec_model.ipynb`](train_fadec_model.ipynb) permet de réentraîner un classifieur de fuite à partir de [`dataset_moteur.csv`](dataset_moteur.csv). Il regroupe les états moteur strictement identiques avant la séparation entraînement/validation/test, produit les courbes d'apprentissage, calcule les métriques de classification et exporte un modèle TensorFlow Lite **Float32**.
+
+Les entrées suivent l'ordre utilisé dans le firmware : `RPM`, `Temperature`, `Fuel`, normalisées respectivement par `7562.3`, `695.3` et `100.0`. Le réseau utilise l'architecture **3 → 8 → 4 → 1**.
+
+Pour exécuter le notebook localement depuis le dossier du dépôt :
+
+```bash
+python -m pip install jupyterlab numpy pandas scikit-learn matplotlib tensorflow
+jupyter lab train_fadec_model.ipynb
+```
+
+Il peut également être ouvert dans Google Colab, avec `dataset_moteur.csv` chargé dans la session.
+
+**Traçabilité du modèle :** le notebook permet un **nouvel entraînement expérimental**, mais ne reconstitue pas exactement les poids de `fadec_edge_ai_model.tflite` actuellement intégré dans le firmware. Il exporte un fichier séparé, `fadec_edge_ai_model_retrained.tflite`. Aucun remplacement du modèle STM32 n'est effectué automatiquement. Le dataset ne comprend qu'une courte simulation et ne permet pas une évaluation indépendante complète.
+
 ## État du projet et pistes d'amélioration
 
-**Présent dans ce dépôt :** firmware C, code généré X-CUBE-AI, modèle `.tflite`, configuration STM32CubeMX, automatisation de compilation, tableau de bord Python et CSV de simulation.
+**Présent dans ce dépôt :** firmware C, code généré X-CUBE-AI, modèle `.tflite` embarqué, configuration STM32CubeMX, compilation automatisée, tableau de bord Python, jeu de données de simulation et notebook de réentraînement expérimental.
 
-**Également disponibles :** le tableau de bord Python [`dashboard_fadec.py`](dashboard_fadec.py) et un jeu de données de simulation [`dataset_moteur.csv`](dataset_moteur.csv) (223 lignes, avec étiquettes de fuite). Ce CSV n'est pas produit directement par le tableau de bord actuel, qui enregistre séparément la télémétrie dans `fadec_telemetry.csv`. Le dépôt ne contient pas encore le script ou notebook d'entraînement, et le lien exact entre ce CSV et les poids du modèle embarqué reste à documenter.
+Le tableau de bord crée son propre fichier de télémétrie `fadec_telemetry.csv`, distinct du dataset `dataset_moteur.csv`.
 
-**Non inclus actuellement :** scripts Python d'entraînement et captures/vidéos de démonstration.
+**Non inclus actuellement :** une démonstration vidéo, le script historique ayant produit les poids du modèle actuellement embarqué et une campagne de validation sur plusieurs sessions indépendantes.
 
 **Améliorations identifiées :**
 
 - retirer les identifiants réseau du code et de l'historique Git ;
 - ajouter des essais de validation du modèle moteur et de la régulation ;
 - vérifier les échanges et le décodage MQTT sur plusieurs scénarios ;
-- retrouver ou reconstituer l'entraînement du modèle, puis documenter sa validation sur des données indépendantes ;
+- documenter l'origine des poids embarqués et valider le modèle sur des acquisitions indépendantes ;
 - mesurer les temps de traitement, l'utilisation mémoire et le comportement temporel sur la cible ;
 - ajouter une démonstration réelle du montage et de la supervision.
 
