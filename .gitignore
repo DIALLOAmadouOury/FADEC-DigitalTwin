@@ -14,3 +14,7 @@ fadec_telemetry.csv
 __pycache__/
 *.py[cod]
 .venv/
+
+# Notebook outputs and experimental model exports
+.ipynb_checkpoints/
+fadec_edge_ai_model_retrained.tflite
