@@ -8,3 +8,9 @@ Debug/**/*.su
 
 # Local credentials (never commit)
 Core/Inc/secrets.h
+
+# Local dashboard logs and Python cache
+fadec_telemetry.csv
+__pycache__/
+*.py[cod]
+.venv/
