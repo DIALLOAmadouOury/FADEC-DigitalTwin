@@ -1,14 +1,18 @@
-# FADEC Digital Twin — Développement firmware C sur STM32L475
+# FADEC Digital Twin — Simulation, régulation PID et TinyML sur STM32
 
-**C embarqué · STM32 HAL · FreeRTOS · PID · ADC / PWM / GPIO · Wi-Fi / MQTT · X-CUBE-AI**
+**STM32L475 · C embarqué · FreeRTOS · PID · X-CUBE-AI · Wi-Fi / MQTT · Python**
 
-**Le cœur de ce projet est le firmware C :** architecture multitâche sous FreeRTOS, régulation PID, simulation moteur, accès aux périphériques STM32 et communication réseau. L'inférence TinyML et le tableau de bord Python viennent compléter cette chaîne embarquée.
+Ce projet personnel associe un **jumeau numérique simplifié de moteur aéronautique**, une **régulation PID**, une **détection d'anomalies par réseau de neurones embarqué** et une **interface de supervision Python**. L'ensemble est intégré autour d'une carte STM32.
 
-Il s'agit d'un **prototype de moteur aéronautique simulé**, et non d'un calculateur FADEC réel ou certifié.
+Le **développement firmware en C** occupe une place importante : organisation des tâches FreeRTOS, algorithmes de simulation et de commande, gestion des périphériques STM32, buffers d'inférence et échanges réseau. Mais le projet mobilise aussi le contrôle-commande, le TinyML et la communication IoT.
 
-## Développement firmware C — les modules à consulter
+**[Voir les captures de supervision](#démonstration-de-la-supervision)** · **[Consulter le firmware C](Core/Src/)** · **[Notebook d'entraînement](train_fadec_model.ipynb)**
 
-| Travail d'ingénierie embarquée | Réalisation dans le code C |
+> **Périmètre :** prototype expérimental avec moteur simulé, et non calculateur FADEC aéronautique réel ou certifié.
+
+## Les compétences techniques mises en œuvre
+
+| Domaine | Réalisation et code associé |
 | --- | --- |
 | **Ordonnancement sous FreeRTOS** | [`main.c`](Core/Src/main.c) : création de `SimTask` (priorité haute), `FadecTask` (normale) et `MqttTask` (basse) ; délais programmés de **10 / 20 / 500 ms** |
 | **Commande et régulation** | [`fadec_core.c`](Core/Src/fadec_core.c) : correcteur **PID**, mémoire de l'erreur, limitation de l'intégrale et saturation de la commande entre 0 et 100 % |
@@ -17,7 +21,7 @@ Il s'agit d'un **prototype de moteur aéronautique simulé**, et non d'un calcul
 | **Communication réseau en C** | [`wifi_mqtt.c`](Core/Src/wifi_mqtt.c) : utilisation de l'interface Wi-Fi/TCP, construction manuelle de trames MQTT **CONNECT / SUBSCRIBE / PUBLISH**, buffers statiques et sérialisation **JSON** |
 | **IA intégrée au firmware** | [`wifi_mqtt.c`](Core/Src/wifi_mqtt.c) : normalisation des entrées, buffers du réseau X-CUBE-AI, appel à `ai_network_run()` et émission de la télémétrie |
 
-**Ce que le projet démontre :** structurer une application embarquée en modules C, intégrer plusieurs tâches et périphériques, faire coexister régulation et communication sur la même cible, puis exposer des données vers une application distante.
+**Ce que le projet démontre :** intégrer sur une même cible une simulation numérique, une boucle de régulation, un réseau de neurones et une communication distante. Cette intégration s'appuie sur du **firmware modulaire en C**, l'ordonnancement FreeRTOS et une interface de supervision Python.
 
 Les tâches utilisent des délais configurés dans FreeRTOS : **il ne s'agit pas de périodes d'exécution mesurées ni d'une garantie temps réel**. Le client MQTT est une implémentation simplifiée destinée à la démonstration, et non une pile réseau industrielle complète.
 
