@@ -14,7 +14,8 @@
  ******************************************************************************
  */
 
-#include "wifi_mqtt.h"    /* Définitions des tâches et structures */
+#include "wifi_mqtt.h"
+#include "secrets.h"    /* Définitions des tâches et structures */
 #include "wifi.h"         /* API Wi-Fi Officielle de STMicroelectronics */
 #include "network.h"      /* API d'inférence générée par X-CUBE-AI */
 #include "network_data.h" /* Poids et biais du modèle IA compressé (Poids Flash) */
@@ -62,7 +63,7 @@ int8_t WifiMqtt_HardwareInit(void) {
            macAddress[3], macAddress[4], macAddress[5]);
 
     /* Connexion Wi-Fi (Les identifiants peuvent être déportés dans un secrets.h) */
-    if (WIFI_Connect("Aod", "Diallo@2", WIFI_ECN_WPA2_PSK) != WIFI_STATUS_OK) return -1;
+    if (WIFI_Connect(WIFI_SSID, WIFI_PASSWORD, WIFI_ECN_WPA2_PSK) != WIFI_STATUS_OK) return -1;
     
     WIFI_GetIP_Address(ipAddress, 4);
     printf("[WIFI] Connecte ! IP : %d.%d.%d.%d\r\n", 
