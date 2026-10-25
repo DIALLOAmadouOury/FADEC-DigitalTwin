@@ -146,18 +146,41 @@ cp Core/Inc/secrets_example.h Core/Inc/secrets.h
 
 Modifier ensuite `Core/Inc/secrets.h` avant de compiler. La CI emploie automatiquement une configuration factice tirée du modèle. **Important :** d'anciens commits contiennent des identifiants Wi-Fi publiés précédemment. Tout mot de passe encore utilisé doit être changé ; retirer le fichier de la branche actuelle ne supprime pas l'historique Git.
 
+## Tableau de bord Python
+
+Le script [`dashboard_fadec.py`](dashboard_fadec.py) utilise **CustomTkinter** et **Paho-MQTT** pour afficher le régime, la température, le débit et le score IA. Il permet d'envoyer des commandes de démarrage, d'arrêt et d'injection de fuite simulée via MQTT.
+
+Installation et lancement depuis la racine du dépôt :
+
+```bash
+python -m pip install customtkinter paho-mqtt
+python dashboard_fadec.py
+```
+
+Le programme se connecte à `broker.hivemq.com:1883` et s'abonne à `stm32/aod/fadec`. Il envoie les commandes sur `stm32/aod/command`. L'application est destinée à une **démonstration sur un broker public non chiffré**, sans confidentialité ni authentification : ne pas utiliser ces topics pour commander un système réel.
+
+À chaque lancement, le script écrit un en-tête CSV dans `fadec_telemetry.csv`, même si ce fichier existe déjà ; ce comportement pourra être amélioré afin d'éviter les en-têtes répétés.
+
+## Jeu de données de simulation
+
+Le fichier [`dataset_moteur.csv`](dataset_moteur.csv) contient **223 observations** : **39 lignes étiquetées 0 (normal)** et **184 lignes étiquetées 1 (fuite)**. Il comprend les colonnes `Timestamp`, `RPM`, `Temperature`, `Fuel` et `Label_Fuite`.
+
+Les classes sont déséquilibrées et les observations proviennent d'une courte séquence de simulation ; le fichier seul ne suffit pas à établir la performance du réseau de neurones sur des données indépendantes.
+
 ## État du projet et pistes d'amélioration
 
-**Présent dans ce dépôt :** firmware C, code généré X-CUBE-AI, modèle `.tflite`, configuration STM32CubeMX et automatisation de compilation.
+**Présent dans ce dépôt :** firmware C, code généré X-CUBE-AI, modèle `.tflite`, configuration STM32CubeMX, automatisation de compilation, tableau de bord Python et CSV de simulation.
 
-**Non inclus actuellement :** scripts Python d'entraînement, tableau de bord de supervision et captures/vidéos de démonstration. Les commandes permettant de reproduire toute la chaîne sur PC ne sont donc pas encore documentées.
+**Également disponibles :** le tableau de bord Python [`dashboard_fadec.py`](dashboard_fadec.py) et un jeu de données de simulation [`dataset_moteur.csv`](dataset_moteur.csv) (223 lignes, avec étiquettes de fuite). Ce CSV n'est pas produit directement par le tableau de bord actuel, qui enregistre séparément la télémétrie dans `fadec_telemetry.csv`. Le dépôt ne contient pas encore le script ou notebook d'entraînement, et le lien exact entre ce CSV et les poids du modèle embarqué reste à documenter.
+
+**Non inclus actuellement :** scripts Python d'entraînement et captures/vidéos de démonstration.
 
 **Améliorations identifiées :**
 
 - retirer les identifiants réseau du code et de l'historique Git ;
 - ajouter des essais de validation du modèle moteur et de la régulation ;
 - vérifier les échanges et le décodage MQTT sur plusieurs scénarios ;
-- documenter l'entraînement et les résultats du modèle IA ;
+- retrouver ou reconstituer l'entraînement du modèle, puis documenter sa validation sur des données indépendantes ;
 - mesurer les temps de traitement, l'utilisation mémoire et le comportement temporel sur la cible ;
 - ajouter une démonstration réelle du montage et de la supervision.
 
