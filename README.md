@@ -1,14 +1,31 @@
-# FADEC Edge AI — Jumeau numérique et détection d'anomalies sur STM32
+# FADEC Digital Twin — Développement firmware C sur STM32L475
 
-**C · STM32L4 · FreeRTOS · X-CUBE-AI · MQTT · Python**
+**C embarqué · STM32 HAL · FreeRTOS · PID · ADC / PWM / GPIO · Wi-Fi / MQTT · X-CUBE-AI**
 
-## Présentation
+**Le cœur de ce projet est le firmware C :** architecture multitâche sous FreeRTOS, régulation PID, simulation moteur, accès aux périphériques STM32 et communication réseau. L'inférence TinyML et le tableau de bord Python viennent compléter cette chaîne embarquée.
 
-Ce projet est un prototype de **surveillance d'un moteur aéronautique simulé sur microcontrôleur STM32**. Il associe un modèle simplifié de dynamique moteur, une régulation PID, un réseau de neurones exécuté localement et une transmission de télémétrie par MQTT.
+Il s'agit d'un **prototype de moteur aéronautique simulé**, et non d'un calculateur FADEC réel ou certifié.
 
-L'objectif est d'étudier l'intégration de plusieurs fonctions embarquées sur une cible contrainte, depuis la simulation et la commande jusqu'à l'inférence et à la communication.
+## Développement firmware C — les modules à consulter
 
-> **Périmètre :** il s'agit d'un projet expérimental de simulation, **pas** d'un véritable calculateur FADEC aéronautique ni d'un dispositif de sûreté certifié. Les grandeurs moteur proviennent principalement du modèle logiciel ; elles ne constituent pas des mesures effectuées sur un turboréacteur réel.
+| Travail d'ingénierie embarquée | Réalisation dans le code C |
+| --- | --- |
+| **Ordonnancement sous FreeRTOS** | [`main.c`](Core/Src/main.c) : création de `SimTask` (priorité haute), `FadecTask` (normale) et `MqttTask` (basse) ; délais programmés de **10 / 20 / 500 ms** |
+| **Commande et régulation** | [`fadec_core.c`](Core/Src/fadec_core.c) : correcteur **PID**, mémoire de l'erreur, limitation de l'intégrale et saturation de la commande entre 0 et 100 % |
+| **Simulation numérique** | [`engine_sim.c`](Core/Src/engine_sim.c) : évolution du régime, température, décélération à l'arrêt et scénario de fuite de carburant |
+| **Programmation des périphériques STM32** | [`hardware_io.c`](Core/Src/hardware_io.c) : **ADC**, timer **PWM**, callback d'interruption **GPIO/EXTI** pour la demande d'arrêt |
+| **Communication réseau en C** | [`wifi_mqtt.c`](Core/Src/wifi_mqtt.c) : utilisation de l'interface Wi-Fi/TCP, construction manuelle de trames MQTT **CONNECT / SUBSCRIBE / PUBLISH**, buffers statiques et sérialisation **JSON** |
+| **IA intégrée au firmware** | [`wifi_mqtt.c`](Core/Src/wifi_mqtt.c) : normalisation des entrées, buffers du réseau X-CUBE-AI, appel à `ai_network_run()` et émission de la télémétrie |
+
+**Ce que le projet démontre :** structurer une application embarquée en modules C, intégrer plusieurs tâches et périphériques, faire coexister régulation et communication sur la même cible, puis exposer des données vers une application distante.
+
+Les tâches utilisent des délais configurés dans FreeRTOS : **il ne s'agit pas de périodes d'exécution mesurées ni d'une garantie temps réel**. Le client MQTT est une implémentation simplifiée destinée à la démonstration, et non une pile réseau industrielle complète.
+
+## Présentation du prototype
+
+Le moteur virtuel fournit un régime, une température et un débit carburant simulés. La régulation calcule la commande, le réseau embarqué analyse les états simulés et le module Wi-Fi transmet la télémétrie vers la supervision Python.
+
+> **Périmètre :** le modèle moteur est expérimental ; les grandeurs publiées ne proviennent pas d'un turboréacteur réel. Les fonctionnalités d'ADC/PWM documentées correspondent à l'interface matérielle du prototype, pas à un actionneur aéronautique.
 
 ## Architecture
 
