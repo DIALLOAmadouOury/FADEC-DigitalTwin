@@ -163,7 +163,12 @@ Le programme se connecte à `broker.hivemq.com:1883` et s'abonne à `stm32/aod/f
 
 ## Démonstration de la supervision
 
-Deux captures du tableau de bord EICAS illustrent un **état nominal** et un **scénario de fuite simulée**. Les captures sont visibles dans [la publication de démonstration sur LinkedIn](https://www.linkedin.com/feed/update/urn:li:activity:7462833268191686657/).
+Deux captures du tableau de bord EICAS illustrent le fonctionnement de la supervision sur le prototype STM32. Les images proviennent de la [démonstration publiée sur LinkedIn](https://www.linkedin.com/feed/update/urn:li:activity:7462833268191686657/).
+
+| Fonctionnement nominal | Fuite de carburant simulée |
+| :---: | :---: |
+| ![Tableau de bord FADEC en fonctionnement nominal : 7500 tr/min, 446 °C, aucune alerte affichée](dashboard_nominal.png) | ![Tableau de bord FADEC avec alerte de fuite simulée : 7256 tr/min, 427 °C et score IA affiché à 93 %](dashboard_fuite.png) |
+| **Moteur simulé en état nominal** | **Alerte de fuite simulée affichée** |
 
 | Paramètre affiché | Fonctionnement nominal | Fuite simulée |
 | --- | ---: | ---: |
