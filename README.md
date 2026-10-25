@@ -138,7 +138,13 @@ make -j
 
 Un [workflow GitHub Actions](.github/workflows/build.yml) compile le firmware et archive les fichiers produits. Une compilation réussie ne remplace pas les essais de fonctionnement sur la carte.
 
-**Configuration réseau :** le firmware public contient une ancienne configuration Wi-Fi de démonstration. Les identifiants doivent être remplacés et retirés de l'historique avant toute réutilisation. Ne pas réutiliser de mot de passe exposé publiquement.
+**Configuration réseau locale :** copier le modèle de configuration, puis renseigner le SSID et le mot de passe **uniquement dans le fichier local ignoré par Git** :
+
+```bash
+cp Core/Inc/secrets_example.h Core/Inc/secrets.h
+```
+
+Modifier ensuite `Core/Inc/secrets.h` avant de compiler. La CI emploie automatiquement une configuration factice tirée du modèle. **Important :** d'anciens commits contiennent des identifiants Wi-Fi publiés précédemment. Tout mot de passe encore utilisé doit être changé ; retirer le fichier de la branche actuelle ne supprime pas l'historique Git.
 
 ## État du projet et pistes d'amélioration
 
