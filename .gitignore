@@ -5,3 +5,6 @@ Debug/**/*.elf
 Debug/**/*.bin
 Debug/**/*.map
 Debug/**/*.su
+
+# Local credentials (never commit)
+Core/Inc/secrets.h
